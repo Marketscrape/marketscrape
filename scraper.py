@@ -23,17 +23,27 @@ def sentiment_analysis(text):
     sentiment = sia.polarity_scores(text)
     
     if sentiment["compound"] >= 0.05:
-        output = "🙂 with {:.2f}% confidence".format((sentiment["neu"] - sentiment["pos"]) * 100)
-        return output, max_sentiment(sentiment)
+        return "🙂", max_sentiment(sentiment), min_sentiment(sentiment)
     elif sentiment["compound"] <= -0.05:
-        output = "🙁 with {:.2f}% confidence".format((sentiment["neu"] - sentiment["pos"]) * 100)
-        return output, max_sentiment(sentiment)
+        return "🙁", max_sentiment(sentiment), min_sentiment(sentiment)
     else:
-        output = "😐 with {:.2f}% confidence".format(sentiment["neu"] * 100)
-        return output, max_sentiment(sentiment)
+        return "😐", max_sentiment(sentiment), min_sentiment(sentiment)
 
 def max_sentiment(sentiment):
+    try:
+        del sentiment["compound"]
+    except KeyError:
+        pass
     value = sentiment[max(sentiment, key=sentiment.get)]
+
+    return value
+
+def min_sentiment(sentiment):
+    try:
+        del sentiment["compound"]
+    except KeyError:
+        pass
+    value = sentiment[min(sentiment, key=sentiment.get)]
 
     return value
 
@@ -76,15 +86,10 @@ def get_price(soup):
 def percentage_difference(intial, final):
     value = (final - intial) / intial
 
-    if value < 0:
-        output = "👎 a {:.2f}% reduction would be better".format(abs(value * 100))
-        return output
-    elif value > 0:
-        output = "👍 a {:.2f}% increase would be acceptable".format(value * 100)
-        return output
-    else:
-        output = "👍 the price is good"
-        return output
+    if value < 0.0:
+        return "👎"
+    elif value >= 0.0:
+        return "👍"
 
 def create_soup(url):
     response = requests.get(url)
@@ -94,17 +99,19 @@ def create_soup(url):
 
 def main():
     url = input("Enter URL: ")
-    shortened_url = re.search(r"(^.*)?\?", url).group(0)
+    shortened_url = re.search(r".*[0-9]", url).group(0)
     mobile_url = shortened_url.replace("www", "m")
 
-    sentiment, value = sentiment_analysis(get_description(create_soup(url)))
+    sentiment, max_value, min_value = sentiment_analysis(get_description(create_soup(url)))
     title = get_title(create_soup(url))
 
     initial_price = int(re.sub("[\$,]", "", get_price(create_soup(mobile_url))))
-    final_price = math.ceil(initial_price * value)
+    min_price = math.floor(initial_price * max_value)
+    max_price = initial_price - math.ceil(initial_price * min_value)
 
-    print("\nHow we feel about this listing: {}".format(sentiment))
-    print("How we feel about the price: {}".format(percentage_difference(initial_price, final_price)))
+    print("\nHow we feel about the description: {}".format(sentiment))
+    print("How we feel about the price: {}".format(percentage_difference(initial_price, max_price)))
+    print("Suggested counter-offers: ${:,} - ${:,}".format(min_price, max_price))
 
 if __name__ == "__main__":
     main()

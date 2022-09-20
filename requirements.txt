@@ -1,0 +1,3 @@
+beautifulsoup4==4.11.1
+nltk==3.7
+requests==2.25.0

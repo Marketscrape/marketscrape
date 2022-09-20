@@ -47,11 +47,6 @@ def min_sentiment(sentiment):
 
     return value
 
-def html_debug(soup):
-    f = open("index.html", "w")
-    f.write(soup.prettify())
-    f.close()
-
 def clean_text(text):
     tokenizer = RegexpTokenizer('\w+|\$[\d\.]+|http\S+')
     tokenized = tokenizer.tokenize(text)

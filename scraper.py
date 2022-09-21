@@ -3,7 +3,6 @@ import requests
 from bs4 import BeautifulSoup
 
 # Math
-import math
 import statistics
 
 # Currency Conversion
@@ -100,7 +99,7 @@ def convert_currency(price, base_currency, target_currency):
     c = CurrencyConverter()
     price = c.convert(price, base_currency, target_currency)
 
-    return math.ceil(price)
+    return price
 
 def find_product_prices(title):
     headers = { 
@@ -121,10 +120,10 @@ def find_product_prices(title):
     normalized = [float(price.replace(",", "")) for price in normalized]
     normalized = sorted(normalized)
 
-    mean = statistics.mean(normalized)
+    median = statistics.median_grouped(normalized)
     deviation = statistics.stdev(normalized)
 
-    return mean, deviation
+    return median, deviation
 
 def valid_url(url):
     if re.search(r"^https://www.facebook.com/", url):
@@ -148,12 +147,12 @@ def main():
     title = get_title(create_soup(url, headers=None))
 
     initial_price = int(re.sub("[\$,]", "", get_price(create_soup(mobile_url, headers=None))))
-    mean, deviation = find_product_prices(title)
+    median, deviation = find_product_prices(title)
 
     print("\nProduct: {}".format(title))
     print("How we feel about the description: {}".format(sentiment))
-    print("How we feel about the price: {}".format(percentage_difference(initial_price, mean)))
-    print("Price range of similar products we found: ${:,.2f} - ${:,.2f}".format(abs(mean - deviation), abs(mean + deviation)))
+    print("How we feel about the price: {}".format(percentage_difference(initial_price, median)))
+    print("Price range of similar products we found: ${:,.2f} - ${:,.2f}".format(abs(median - deviation), abs(median + deviation)))
 
 if __name__ == "__main__":
     main()

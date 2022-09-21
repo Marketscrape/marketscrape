@@ -4,6 +4,10 @@ from bs4 import BeautifulSoup
 
 # Math
 import math
+import statistics
+
+# Currency Conversion
+from currency_converter import CurrencyConverter
 
 # Sentiment Analysis
 import nltk
@@ -23,11 +27,11 @@ def sentiment_analysis(text):
     sentiment = sia.polarity_scores(text)
     
     if sentiment["compound"] >= 0.05:
-        return "🙂", max_sentiment(sentiment), min_sentiment(sentiment)
+        return "🙂"
     elif sentiment["compound"] <= -0.05:
-        return "🙁", max_sentiment(sentiment), min_sentiment(sentiment)
+        return "🙁"
     else:
-        return "😐", max_sentiment(sentiment), min_sentiment(sentiment)
+        return "😐"
 
 def max_sentiment(sentiment):
     try:
@@ -86,27 +90,70 @@ def percentage_difference(intial, final):
     elif value >= 0.0:
         return "👍"
 
-def create_soup(url):
-    response = requests.get(url)
+def create_soup(url, headers):
+    response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
 
     return soup
 
+def convert_currency(price, base_currency, target_currency):
+    c = CurrencyConverter()
+    price = c.convert(price, base_currency, target_currency)
+
+    return math.ceil(price)
+
+def find_product_prices(title):
+    headers = { 
+        "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"
+    }
+    url = "https://www.google.com/search?q=" + title + "&sa=X&biw=1920&bih=927&tbm=shop&sxsrf=ALiCzsbtwkWiDOQEcm_9X1UBlEG1iaqXtg%3A1663739640147&ei=-KYqY6CsCLez0PEP0Ias2AI&ved=0ahUKEwigiP-RmaX6AhW3GTQIHVADCysQ4dUDCAU&uact=5&oq=REPLACE&gs_lcp=Cgtwcm9kdWN0cy1jYxADMgUIABCABDIFCAAQgAQyBQgAEIAEMgsIABCABBCxAxCDATIECAAQAzIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEOgsIABAeEA8QsAMQGDoNCAAQHhAPELADEAUQGDoGCAAQChADSgQIQRgBUM4MWO4TYJoVaAFwAHgAgAFDiAGNA5IBATeYAQCgAQHIAQPAAQE&sclient=products-cc"
+    
+    soup = create_soup(url, headers)
+    prices = soup.find_all("span", {"class": "HRLxBb"})
+
+    values = []
+    for price in prices:
+        values.append(price.text)
+
+    normalized = [re.sub("\$", "", price) for price in values]
+    normalized = [re.search(r"[0-9,.]*", price).group(0) for price in normalized]
+    normalized = [float(price.replace(",", "")) for price in normalized]
+    normalized = sorted(normalized)
+
+    mean = statistics.mean(normalized)
+    deviation = statistics.stdev(normalized)
+
+    return mean, deviation
+
+def valid_url(url):
+    if re.search(r"^https://www.facebook.com/", url):
+        return True
+    else:
+        return False
+
 def main():
     url = input("Enter URL: ")
+
+    if valid_url(url):
+        pass
+    else:
+        print("Invalid URL")
+        exit(1)
+
     shortened_url = re.search(r".*[0-9]", url).group(0)
     mobile_url = shortened_url.replace("www", "m")
 
-    sentiment, max_value, min_value = sentiment_analysis(get_description(create_soup(url)))
-    title = get_title(create_soup(url))
+    sentiment = sentiment_analysis(get_description(create_soup(url, headers=None)))
+    title = get_title(create_soup(url, headers=None))
 
-    initial_price = int(re.sub("[\$,]", "", get_price(create_soup(mobile_url))))
-    min_price = math.floor(initial_price * max_value)
-    max_price = initial_price - math.ceil(initial_price * min_value)
+    initial_price = int(re.sub("[\$,]", "", get_price(create_soup(mobile_url, headers=None))))
+    mean, deviation = find_product_prices(title)
 
-    print("\nHow we feel about the description: {}".format(sentiment))
-    print("How we feel about the price: {}".format(percentage_difference(initial_price, max_price)))
-    print("Suggested counter-offers: ${:,} - ${:,}".format(min_price, max_price))
+    print("\nProduct: {}".format(title))
+    print("How we feel about the description: {}".format(sentiment))
+    print("How we feel about the price: {}".format(percentage_difference(initial_price, mean)))
+    print("Price range of similar products we found: ${:,.2f} - ${:,.2f}".format(abs(mean - deviation), abs(mean + deviation)))
 
 if __name__ == "__main__":
     main()

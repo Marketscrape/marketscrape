@@ -77,7 +77,7 @@ def get_description(soup):
 
 def get_price(soup):
     spans = soup.find_all("span")
-    price = re.search(r"\$[0-9]*[^<]*", str(spans[1])).group(0)
+    price = [str(span.text) for span in spans if "$" in span.text][0]
 
     return price
 

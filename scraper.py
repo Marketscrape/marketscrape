@@ -97,6 +97,9 @@ def five_star_rating(initial, final):
     elif decimal > 0.25:
         score += "🌗"
 
+    if len(score) < 5:
+        score += "🌑"
+
     return score
 
 def create_soup(url, headers):

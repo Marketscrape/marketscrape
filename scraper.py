@@ -25,31 +25,14 @@ import re
 def sentiment_analysis(text):
     sia = SentimentIntensityAnalyzer()
     sentiment = sia.polarity_scores(text)
-    
-    if sentiment["compound"] >= 0.05:
-        return "🙂"
-    elif sentiment["compound"] <= -0.05:
-        return "🙁"
-    else:
-        return "😐"
 
-def max_sentiment(sentiment):
-    try:
-        del sentiment["compound"]
-    except KeyError:
-        pass
-    value = sentiment[max(sentiment, key=sentiment.get)]
+    feeling = sentiment[max(sentiment, key=sentiment.get)]
+    rating = (feeling * 100) / 20
 
-    return value
+    if sentiment["compound"] <= -0.05:
+        rating -= rating * sentiment["neg"]
 
-def min_sentiment(sentiment):
-    try:
-        del sentiment["compound"]
-    except KeyError:
-        pass
-    value = sentiment[min(sentiment, key=sentiment.get)]
-
-    return value
+    return stars(rating)
 
 def clean_text(text):
     tokenizer = RegexpTokenizer('\w+|\$[\d\.]+|http\S+')
@@ -64,43 +47,47 @@ def clean_text(text):
     
     return " ".join(lemmatized)
 
-def get_title(soup):
+def get_listing_title(soup):
     title = soup.find("meta", {"name": "DC.title"})
     title_content = title["content"]
 
     return title_content
 
-def get_description(soup):
+def get_listing_description(soup):
     description = soup.find("meta", {"name": "DC.description"})
     description_content = description["content"]
 
     return clean_text(description_content)
 
-def get_price(soup):
+def get_listing_price(soup):
     spans = soup.find_all("span")
     price = [str(span.text) for span in spans if "$" in span.text][0]
 
     return price
 
-def five_star_rating(initial, final):
-    value = 100 - (initial / (final + initial)) * 100
-    rating = (value + 50) / 20
-
+def stars(rating):
     if rating >= 5.0:
         rating = 5.0
 
     pure_rating = int(rating)
     decimal = rating - pure_rating
     score = "🌕" * pure_rating
+
     if decimal > 0.75:
         score += "🌕"
     elif decimal > 0.25:
         score += "🌗"
 
     if len(score) < 5:
-        score += "🌑"
-
+        score += "🌑" * (5 - len(score))
+    
     return score
+
+def price_rating(initial, final):
+    value = 100 - (initial / (final + initial)) * 100
+    rating = (value + 50) / 20
+
+    return stars(rating)
 
 def create_soup(url, headers):
     response = requests.get(url, headers=headers)
@@ -156,20 +143,20 @@ def main():
     shortened_url = re.search(r".*[0-9]", url).group(0)
     mobile_url = shortened_url.replace("www", "m")
 
-    sentiment = sentiment_analysis(get_description(create_soup(url, headers=None)))
-    title = get_title(create_soup(url, headers=None))
+    sentiment = sentiment_analysis(get_listing_description(create_soup(url, headers=None)))
+    title = get_listing_title(create_soup(url, headers=None))
 
-    initial_price = int(re.sub("[\$,]", "", get_price(create_soup(mobile_url, headers=None))))
+    initial_price = int(re.sub("[\$,]", "", get_listing_price(create_soup(mobile_url, headers=None))))
     median, deviation = find_product_prices(title)
     
     lower_bound = abs(median - deviation)
     upper_bound = abs(median + deviation)
     bound_average = statistics.mean([lower_bound, upper_bound])
 
-    print("\nProduct: {}".format(title))
-    print("How we feel about the description: {}".format(sentiment))
-    print("How we feel about the price: {}".format(five_star_rating(initial_price, bound_average)))
-    print("Price range of similar products we found: ${:,.2f} - ${:,.2f}".format(lower_bound, upper_bound))
+    print("\nProduct: {} \nPrice: ${:,.2f}\n".format(title, initial_price))
+    print("Description rating: {}".format(sentiment))
+    print("Price rating: {}".format(price_rating(initial_price, bound_average)))
+    print("Price range of similar products: ${:,.2f} - ${:,.2f}".format(lower_bound, upper_bound))
 
 if __name__ == "__main__":
     main()

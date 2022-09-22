@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # Math
+import math
 import statistics
 
 # Currency Conversion
@@ -81,13 +82,19 @@ def get_price(soup):
 
     return price
 
-def percentage_difference(intial, final):
-    value = (final - intial) / intial
+def five_star_rating(initial, final):
+    value = 100 - (initial / (final + initial)) * 100
+    rating = value / 20
 
-    if value < 0.0:
-        return "👎"
-    elif value >= 0.0:
-        return "👍"
+    pure_rating = int(rating)
+    decimal = rating - pure_rating
+    score = "🌕" * pure_rating
+    if decimal > 0.75:
+        score += "🌕"
+    elif decimal > 0.25:
+        score += "🌗"
+
+    return score
 
 def create_soup(url, headers):
     response = requests.get(url, headers=headers)
@@ -148,11 +155,15 @@ def main():
 
     initial_price = int(re.sub("[\$,]", "", get_price(create_soup(mobile_url, headers=None))))
     median, deviation = find_product_prices(title)
+    
+    lower_bound = abs(median - deviation)
+    upper_bound = abs(median + deviation)
+    bound_average = statistics.mean([lower_bound, upper_bound])
 
     print("\nProduct: {}".format(title))
     print("How we feel about the description: {}".format(sentiment))
-    print("How we feel about the price: {}".format(percentage_difference(initial_price, median)))
-    print("Price range of similar products we found: ${:,.2f} - ${:,.2f}".format(abs(median - deviation), abs(median + deviation)))
+    print("How we feel about the price: {}".format(five_star_rating(initial_price, bound_average)))
+    print("Price range of similar products we found: ${:,.2f} - ${:,.2f}".format(lower_bound, upper_bound))
 
 if __name__ == "__main__":
     main()

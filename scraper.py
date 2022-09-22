@@ -84,7 +84,10 @@ def get_price(soup):
 
 def five_star_rating(initial, final):
     value = 100 - (initial / (final + initial)) * 100
-    rating = value / 20
+    rating = (value + 50) / 20
+
+    if rating >= 5.0:
+        rating = 5.0
 
     pure_rating = int(rating)
     decimal = rating - pure_rating

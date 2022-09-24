@@ -127,19 +127,24 @@ def get_product_description(soup):
 
     return description
 
-def listing_product_similarity(soup, title):
+def listing_product_similarity(soup, title, similarity_threshold):
     normalized = get_product_price(soup)
     description = get_product_description(soup)
 
     price_description = {}
 
     for key, value in zip(description, normalized):
-        if SequenceMatcher(None, key.text, title).ratio() > 0.5:
+        if SequenceMatcher(None, key.text, title).ratio() >= similarity_threshold:
             price_description[key.text] = value
+    
+    prices = []
+    for key, value in price_description.items():
+        prices.append(value)
 
-    return price_description    
+    return prices   
 
-def find_viable_product(title):
+
+def find_viable_product(title, ramp_down):
     title = clean_listing_title(title)
     headers = { 
         "User-Agent":
@@ -148,18 +153,19 @@ def find_viable_product(title):
     url = "https://www.google.com/search?q=" + title + "&sa=X&biw=1920&bih=927&tbm=shop&sxsrf=ALiCzsbtwkWiDOQEcm_9X1UBlEG1iaqXtg%3A1663739640147&ei=-KYqY6CsCLez0PEP0Ias2AI&ved=0ahUKEwigiP-RmaX6AhW3GTQIHVADCysQ4dUDCAU&uact=5&oq=REPLACE&gs_lcp=Cgtwcm9kdWN0cy1jYxADMgUIABCABDIFCAAQgAQyBQgAEIAEMgsIABCABBCxAxCDATIECAAQAzIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEOgsIABAeEA8QsAMQGDoNCAAQHhAPELADEAUQGDoGCAAQChADSgQIQRgBUM4MWO4TYJoVaAFwAHgAgAFDiAGNA5IBATeYAQCgAQHIAQPAAQE&sclient=products-cc"
 
     soup = create_soup(url, headers)
+    similarity_threshold = 0.5
 
-    description = listing_product_similarity(soup, title)
-    prices = []
-    for key, value in description.items():
-        prices.append(value)
-    
     try:
-        median = statistics.median_grouped(prices)
-    except:
-        print("No viable products found")
-        exit(1)
-
+        prices = listing_product_similarity(soup, title, similarity_threshold)
+        assert len(prices) > 0
+    except AssertionError:
+        print("Error: no viable products found, now searching for more general products...")
+        while len(prices) == 0:
+            ramp_down += 0.05
+            prices = listing_product_similarity(soup, title, similarity_threshold - ramp_down)
+    
+    median = statistics.median_grouped(prices)
+    
     return min(prices), max(prices), median
 
 def valid_url(url):
@@ -174,7 +180,7 @@ def main():
     if valid_url(url):
         pass
     else:
-        print("Invalid URL")
+        print("Error: URL is not from Facebook Marketplace.")
         exit(1)
 
     shortened_url = re.search(r".*[0-9]", url).group(0)
@@ -184,13 +190,14 @@ def main():
     title = get_listing_title(create_soup(url, headers=None))
 
     initial_price = int(re.sub("[\$,]", "", get_listing_price(create_soup(mobile_url, headers=None))))
-    lower_bound, upper_bound, median = find_viable_product(title)
+    lower_bound, upper_bound, median = find_viable_product(title, ramp_down=0.0)
 
     price_rating = price_difference_rating(initial_price, median)
     average_rating = statistics.mean([sentiment_rating, price_rating])
 
-    print("\nProduct: {} \nPrice: ${:,.2f}".format(title, initial_price))
-    print("Price range of similar products: ${:,.2f} - ${:,.2f}\n".format(lower_bound, upper_bound))
+    print("\nProduct: {} \nPrice: ${:,.2f}\n".format(title, initial_price))
+    print("Price range of similar products: ${:,.2f} - ${:,.2f}".format(lower_bound, upper_bound))
+    print("Price median: ${:,.2f}\n".format(median))
     print("Description rating: {}".format(stars(sentiment_rating)))
     print("Price rating: {}".format(stars(price_rating)))
     print("Overall rating: {}".format(stars(average_rating)))

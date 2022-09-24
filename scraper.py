@@ -134,7 +134,7 @@ def listing_product_similarity(soup, title, similarity_threshold):
     price_description = {}
 
     for key, value in zip(description, normalized):
-        if SequenceMatcher(None, key.text, title).ratio() >= similarity_threshold:
+        if SequenceMatcher(None, key.text.lower(), title.lower()).ratio() >= similarity_threshold:
             price_description[key.text] = value
     
     prices = []
@@ -142,7 +142,6 @@ def listing_product_similarity(soup, title, similarity_threshold):
         prices.append(value)
 
     return prices   
-
 
 def find_viable_product(title, ramp_down):
     title = clean_listing_title(title)

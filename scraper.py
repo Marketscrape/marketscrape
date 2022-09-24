@@ -16,6 +16,7 @@ from nltk.corpus import stopwords
 from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem import WordNetLemmatizer
+from difflib import SequenceMatcher
 
 # Pattern Matching
 import re
@@ -102,17 +103,13 @@ def convert_currency(price, base_currency, target_currency):
 
     return price
 
-def find_product_prices(title):
+def clean_listing_title(title):
     title = re.sub(r"#", "%2", title)
     title = re.sub(r"&", "%26", title)
-    
-    headers = { 
-        "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"
-    }
-    url = "https://www.google.com/search?q=" + title + "&sa=X&biw=1920&bih=927&tbm=shop&sxsrf=ALiCzsbtwkWiDOQEcm_9X1UBlEG1iaqXtg%3A1663739640147&ei=-KYqY6CsCLez0PEP0Ias2AI&ved=0ahUKEwigiP-RmaX6AhW3GTQIHVADCysQ4dUDCAU&uact=5&oq=REPLACE&gs_lcp=Cgtwcm9kdWN0cy1jYxADMgUIABCABDIFCAAQgAQyBQgAEIAEMgsIABCABBCxAxCDATIECAAQAzIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEOgsIABAeEA8QsAMQGDoNCAAQHhAPELADEAUQGDoGCAAQChADSgQIQRgBUM4MWO4TYJoVaAFwAHgAgAFDiAGNA5IBATeYAQCgAQHIAQPAAQE&sclient=products-cc"
-    
-    soup = create_soup(url, headers)
+
+    return title
+
+def get_product_price(soup):
     prices = soup.find_all("span", {"class": "HRLxBb"})
 
     values = []
@@ -122,12 +119,48 @@ def find_product_prices(title):
     normalized = [re.sub("\$", "", price) for price in values]
     normalized = [re.search(r"[0-9,.]*", price).group(0) for price in normalized]
     normalized = [float(price.replace(",", "")) for price in normalized]
-    normalized = sorted(normalized)
 
-    median = statistics.median_grouped(normalized)
-    deviation = statistics.stdev(normalized)
+    return normalized
 
-    return median, deviation
+def get_product_description(soup):
+    description = soup.find_all("div", {"class": "rgHvZc"})
+
+    return description
+
+def listing_product_similarity(soup, title):
+    normalized = get_product_price(soup)
+    description = get_product_description(soup)
+
+    price_description = {}
+
+    for key, value in zip(description, normalized):
+        if SequenceMatcher(None, key.text, title).ratio() > 0.5:
+            price_description[key.text] = value
+
+    return price_description    
+
+def find_viable_product(title):
+    title = clean_listing_title(title)
+    headers = { 
+        "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"
+    }
+    url = "https://www.google.com/search?q=" + title + "&sa=X&biw=1920&bih=927&tbm=shop&sxsrf=ALiCzsbtwkWiDOQEcm_9X1UBlEG1iaqXtg%3A1663739640147&ei=-KYqY6CsCLez0PEP0Ias2AI&ved=0ahUKEwigiP-RmaX6AhW3GTQIHVADCysQ4dUDCAU&uact=5&oq=REPLACE&gs_lcp=Cgtwcm9kdWN0cy1jYxADMgUIABCABDIFCAAQgAQyBQgAEIAEMgsIABCABBCxAxCDATIECAAQAzIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEOgsIABAeEA8QsAMQGDoNCAAQHhAPELADEAUQGDoGCAAQChADSgQIQRgBUM4MWO4TYJoVaAFwAHgAgAFDiAGNA5IBATeYAQCgAQHIAQPAAQE&sclient=products-cc"
+
+    soup = create_soup(url, headers)
+
+    description = listing_product_similarity(soup, title)
+    prices = []
+    for key, value in description.items():
+        prices.append(value)
+    
+    try:
+        median = statistics.median_grouped(prices)
+    except:
+        print("No viable products found")
+        exit(1)
+
+    return min(prices), max(prices), median
 
 def valid_url(url):
     if re.search(r"^https://www.facebook.com/", url):
@@ -151,13 +184,9 @@ def main():
     title = get_listing_title(create_soup(url, headers=None))
 
     initial_price = int(re.sub("[\$,]", "", get_listing_price(create_soup(mobile_url, headers=None))))
-    median, deviation = find_product_prices(title)
-    
-    lower_bound = abs(median - deviation)
-    upper_bound = abs(median + deviation)
-    bound_average = statistics.mean([lower_bound, upper_bound])
+    lower_bound, upper_bound, median = find_viable_product(title)
 
-    price_rating = price_difference_rating(initial_price, bound_average)
+    price_rating = price_difference_rating(initial_price, median)
     average_rating = statistics.mean([sentiment_rating, price_rating])
 
     print("\nProduct: {} \nPrice: ${:,.2f}".format(title, initial_price))

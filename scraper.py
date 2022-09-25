@@ -1,4 +1,5 @@
 # Web Scraping
+from distutils.command.clean import clean
 import requests
 from bs4 import BeautifulSoup
 
@@ -127,6 +128,12 @@ def get_product_description(soup):
 
     return description
 
+def clean_title_description(title):
+    cleaned = re.sub(r"[^A-Za-z0-9\s]+", " ", title)
+    cleaned = re.sub(r"\s+", " ", cleaned)
+
+    return cleaned
+
 def listing_product_similarity(soup, title, similarity_threshold):
     normalized = get_product_price(soup)
     description = get_product_description(soup)
@@ -134,13 +141,16 @@ def listing_product_similarity(soup, title, similarity_threshold):
     price_description = {}
 
     for key, value in zip(description, normalized):
-        if SequenceMatcher(None, key.text.lower(), title.lower()).ratio() >= similarity_threshold:
+        google_shopping_title = clean_title_description(key.text.lower())
+        listing_title = clean_title_description(title.lower())
+
+        if SequenceMatcher(None, google_shopping_title, listing_title).ratio() >= similarity_threshold:
             price_description[key.text] = value
     
     prices = []
     for key, value in price_description.items():
         prices.append(value)
-
+    
     return prices   
 
 def find_viable_product(title, ramp_down):

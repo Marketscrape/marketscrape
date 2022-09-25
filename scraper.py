@@ -26,11 +26,12 @@ def sentiment_analysis(text):
     sia = SentimentIntensityAnalyzer()
     sentiment = sia.polarity_scores(text)
 
-    feeling = sentiment[max(sentiment, key=sentiment.get)]
-    rating = (feeling * 100) / 20
-
-    if sentiment["compound"] <= -0.05:
-        rating -= rating * sentiment["neg"]
+    if sentiment["compound"] >= 0.05:
+        rating = ((sentiment["pos"] + sentiment["neu"]) / 20) * 100
+    elif sentiment["compound"] <= -0.05:
+        rating = ((sentiment["neg"] + sentiment["neu"]) / 20) * 100
+    else:
+        rating = (sentiment["neu"] / 20) * 100
 
     return truncate_rating(rating)
 
@@ -48,15 +49,16 @@ def clean_text(text):
     return " ".join(lemmatized)
 
 def price_difference_rating(initial, final):
-    value = 100 - (initial / (final + initial)) * 100
-    rating = (value + 50) / 20
+    values = [initial, final]
+    difference = min(values) / max(values)
+    rating = (difference / 20) * 100
 
     return truncate_rating(rating)
 
 def truncate_rating(rating):
     if rating >= 5.0:
         rating = 5.0
-    
+
     return rating
 
 def stars(rating):
@@ -139,17 +141,15 @@ def listing_product_similarity(soup, title, similarity_threshold):
     description = get_product_description(soup)
 
     price_description = {}
-
     for key, value in zip(description, normalized):
         google_shopping_title = clean_title_description(key.text.lower())
         listing_title = clean_title_description(title.lower())
+        price_description[key.text] = [value, SequenceMatcher(None, google_shopping_title, listing_title).ratio()]
 
-        if SequenceMatcher(None, google_shopping_title, listing_title).ratio() >= similarity_threshold:
-            price_description[key.text] = value
-    
     prices = []
     for key, value in price_description.items():
-        prices.append(value)
+        if value[1] >= similarity_threshold:
+            prices.append(value[0])
     
     return prices   
 
@@ -162,7 +162,7 @@ def find_viable_product(title, ramp_down):
     url = "https://www.google.com/search?q=" + title + "&sa=X&biw=1920&bih=927&tbm=shop&sxsrf=ALiCzsbtwkWiDOQEcm_9X1UBlEG1iaqXtg%3A1663739640147&ei=-KYqY6CsCLez0PEP0Ias2AI&ved=0ahUKEwigiP-RmaX6AhW3GTQIHVADCysQ4dUDCAU&uact=5&oq=REPLACE&gs_lcp=Cgtwcm9kdWN0cy1jYxADMgUIABCABDIFCAAQgAQyBQgAEIAEMgsIABCABBCxAxCDATIECAAQAzIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEOgsIABAeEA8QsAMQGDoNCAAQHhAPELADEAUQGDoGCAAQChADSgQIQRgBUM4MWO4TYJoVaAFwAHgAgAFDiAGNA5IBATeYAQCgAQHIAQPAAQE&sclient=products-cc"
 
     soup = create_soup(url, headers)
-    similarity_threshold = 0.5
+    similarity_threshold = 0.45
 
     try:
         prices = listing_product_similarity(soup, title, similarity_threshold)

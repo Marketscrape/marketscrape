@@ -11,7 +11,6 @@ from currency_converter import CurrencyConverter
 
 # Sentiment Analysis
 #nltk.download()
-import nltk.corpus
 #nltk.download('stopwords')
 from nltk.corpus import stopwords
 from nltk.sentiment import SentimentIntensityAnalyzer
@@ -25,15 +24,16 @@ import re
 def sentiment_analysis(text):
     sia = SentimentIntensityAnalyzer()
     sentiment = sia.polarity_scores(text)
+    neg, neu, pos, compound = sentiment["neg"], sentiment["neu"], sentiment["pos"], sentiment["compound"]
 
-    if sentiment["compound"] >= 0.05:
-        rating = ((sentiment["pos"] + sentiment["neu"]) / 20) * 100
-    elif sentiment["compound"] <= -0.05:
-        rating = ((sentiment["neg"] + sentiment["neu"]) / 20) * 100
+    if compound > 0.0:
+        rating = 5 * max(pos, compound)
+    elif compound < 0.0:
+        rating = 5 * min(neg, compound)
     else:
-        rating = (sentiment["neu"] / 20) * 100
-
-    return truncate_rating(rating)
+        rating = 5 * neu
+        
+    return abs(rating)
 
 def clean_text(text):
     tokenizer = RegexpTokenizer('\w+|\$[\d\.]+|http\S+')
@@ -49,15 +49,12 @@ def clean_text(text):
     return " ".join(lemmatized)
 
 def price_difference_rating(initial, final):
-    values = [initial, final]
-    difference = min(values) / max(values)
-    rating = (difference / 20) * 100
-
-    return truncate_rating(rating)
-
-def truncate_rating(rating):
-    if rating >= 5.0:
+    if initial <= final:
         rating = 5.0
+    else:
+        values = [initial, final]
+        difference = min(values) / max(values)
+        rating = (difference / 20) * 100
 
     return rating
 

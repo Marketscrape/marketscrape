@@ -105,8 +105,6 @@ def get_product_price(soup):
     normalized = [float(price.replace(",", "")) for price in normalized]
     
     outlierless = reject_outliers(np.array(normalized))
-    print(normalized)
-    print(outlierless)
 
     return outlierless
 

@@ -168,10 +168,10 @@ def valid_url(url):
 
 # The larger the value of m is, the less outliers are removed
 def reject_outliers(data, m=1.5):
-    d = np.abs(data - np.median(data))
-    mdev = np.median(d)
-    s = d / (mdev if mdev else 1.)
-    return data[s < m].tolist()
+    distribution = np.abs(data - np.median(data))
+    m_deviation = np.median(distribution)
+    standard = distribution / (m_deviation if m_deviation else 1.)
+    return data[standard < m].tolist()
 
 def main():
     url = input("Enter URL: ")
@@ -194,12 +194,16 @@ def main():
     price_rating = price_difference_rating(initial_price, median)
     average_rating = statistics.mean([sentiment_rating, price_rating])
 
-    print("\nProduct: {} \nPrice: ${:,.2f}\n".format(title, initial_price))
-    print("Price range of similar products: ${:,.2f} - ${:,.2f}".format(lower_bound, upper_bound))
-    print("Price median: ${:,.2f}\n".format(median))
-    print("Description rating: {:,.2f}/5.00".format(sentiment_rating))
-    print("Price rating: {:,.2f}/5.00".format(price_rating))
-    print("Overall rating: {:,.2f}/5.00".format(average_rating))
+    print("\n● Listing:")
+    print("  ○ Product: {}".format(title))
+    print("  ○ Price: ${:,.2f}".format(initial_price))
+    print("● Similar products:")
+    print("  ○ Range: ${:,.2f} - ${:,.2f}".format(lower_bound, upper_bound))
+    print("  ○ Median: ${:,.2f}".format(median))
+    print("● Ratings:")
+    print("  ○ Description: {:,.2f}/5.00".format(sentiment_rating))
+    print("  ○ Price: {:,.2f}/5.00".format(price_rating))
+    print("  ○ Overall: {:,.2f}/5.00".format(average_rating))
 
 if __name__ == "__main__":
     main()

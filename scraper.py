@@ -1,10 +1,10 @@
 # Web Scraping
-from distutils.command.clean import clean
 import requests
 from bs4 import BeautifulSoup
 
 # Math
 import statistics
+import numpy as np
 
 # Currency Conversion
 from currency_converter import CurrencyConverter
@@ -52,26 +52,10 @@ def price_difference_rating(initial, final):
     if initial <= final:
         rating = 5.0
     else:
-        values = [initial, final]
-        difference = min(values) / max(values)
+        difference = min(initial, final) / max(initial, final)
         rating = (difference / 20) * 100
 
     return rating
-
-def stars(rating):
-    pure_rating = int(rating)
-    decimal = rating - pure_rating
-    score = "🌕" * pure_rating
-
-    if decimal > 0.75:
-        score += "🌕"
-    elif decimal > 0.25:
-        score += "🌗"
-
-    if len(score) < 5:
-        score += "🌑" * (5 - len(score))
-    
-    return score
 
 def get_listing_title(soup):
     title = soup.find("meta", {"name": "DC.title"})
@@ -119,8 +103,12 @@ def get_product_price(soup):
     normalized = [re.sub("\$", "", price) for price in values]
     normalized = [re.search(r"[0-9,.]*", price).group(0) for price in normalized]
     normalized = [float(price.replace(",", "")) for price in normalized]
+    
+    outlierless = reject_outliers(np.array(normalized))
+    print(normalized)
+    print(outlierless)
 
-    return normalized
+    return outlierless
 
 def get_product_description(soup):
     description = soup.find_all("div", {"class": "rgHvZc"})
@@ -180,6 +168,13 @@ def valid_url(url):
     else:
         return False
 
+# The larger the value of m is, the less outliers are removed
+def reject_outliers(data, m=1.5):
+    d = np.abs(data - np.median(data))
+    mdev = np.median(d)
+    s = d / (mdev if mdev else 1.)
+    return data[s < m].tolist()
+
 def main():
     url = input("Enter URL: ")
 
@@ -204,9 +199,9 @@ def main():
     print("\nProduct: {} \nPrice: ${:,.2f}\n".format(title, initial_price))
     print("Price range of similar products: ${:,.2f} - ${:,.2f}".format(lower_bound, upper_bound))
     print("Price median: ${:,.2f}\n".format(median))
-    print("Description rating: {}".format(stars(sentiment_rating)))
-    print("Price rating: {}".format(stars(price_rating)))
-    print("Overall rating: {}".format(stars(average_rating)))
+    print("Description rating: {:,.2f}/5.00".format(sentiment_rating))
+    print("Price rating: {:,.2f}/5.00".format(price_rating))
+    print("Overall rating: {:,.2f}/5.00".format(average_rating))
 
 if __name__ == "__main__":
     main()

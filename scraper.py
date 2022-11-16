@@ -214,6 +214,18 @@ def reject_outliers(data, m=1.5):
     standard = distribution / (m_deviation if m_deviation else 1.)
     return data[standard < m].tolist()
 
+def print_results(title, initial_price, sentiment_rating, price_rating, average_rating, median, lower_bound, upper_bound):
+    print("\n● Listing:")
+    print("  ○ Product: {}".format(title))
+    print("  ○ Price: ${:,.2f}".format(initial_price))
+    print("● Similar products:")
+    print("  ○ Range: ${:,.2f} - ${:,.2f}".format(lower_bound, upper_bound))
+    print("  ○ Median: ${:,.2f}".format(median))
+    print("● Ratings:")
+    print("  ○ Description: {:,.2f}/5.00".format(sentiment_rating))
+    print("  ○ Price: {:,.2f}/5.00".format(price_rating))
+    print("  ○ Overall: {:,.2f}/5.00".format(average_rating))
+
 def main():
     # Initialize the database
     database.initialize()
@@ -233,31 +245,35 @@ def main():
     # Use the shortened URL and convert it to mobile, to get the price of the listing
     mobile_url = shortened_url.replace("www", "m")
 
-    # Get the sentiment rating of the listing
-    sentiment_rating = sentiment_analysis(get_listing_description(create_soup(url, headers=None)))
-    title = get_listing_title(create_soup(url, headers=None))
+    records = database.retrieve(url)
+    if records:
+        title = records[1]
+        initial_price = records[2]
+        sentiment_rating = records[3]
+        price_rating = records[4]
+        average_rating = records[5]
+        median = records[6]
+        lower_bound = records[7]
+        upper_bound = records[8]
+    elif not records:
+        # Get the sentiment rating of the listing
+        sentiment_rating = sentiment_analysis(get_listing_description(create_soup(url, headers=None)))
 
-    # Get the minimum, maximum, and median price of the viable products
-    initial_price = int(re.sub("[\$,]", "", get_listing_price(create_soup(mobile_url, headers=None))))
-    lower_bound, upper_bound, median = find_viable_product(title, ramp_down=0.0)
+        # Get the title of the listing
+        title = get_listing_title(create_soup(url, headers=None))
 
-    # Calculate the price difference between the listing and the median price of the viable products, and generate ratings
-    price_rating = price_difference_rating(initial_price, median)
-    average_rating = statistics.mean([sentiment_rating, price_rating])
+        # Get the minimum, maximum, and median prices of the viable products found on Google Shopping
+        initial_price = int(re.sub("[\$,]", "", get_listing_price(create_soup(mobile_url, headers=None))))
+        lower_bound, upper_bound, median = find_viable_product(title, ramp_down=0.0)
 
-    # Add the listing to the database
-    database.insert(url, title, initial_price, sentiment_rating, price_rating, average_rating, median, lower_bound, upper_bound)
+        # Calculate the price difference between the listing and the median price of the viable products, and generate ratings
+        price_rating = price_difference_rating(initial_price, median)
+        average_rating = statistics.mean([sentiment_rating, price_rating])
 
-    print("\n● Listing:")
-    print("  ○ Product: {}".format(title))
-    print("  ○ Price: ${:,.2f}".format(initial_price))
-    print("● Similar products:")
-    print("  ○ Range: ${:,.2f} - ${:,.2f}".format(lower_bound, upper_bound))
-    print("  ○ Median: ${:,.2f}".format(median))
-    print("● Ratings:")
-    print("  ○ Description: {:,.2f}/5.00".format(sentiment_rating))
-    print("  ○ Price: {:,.2f}/5.00".format(price_rating))
-    print("  ○ Overall: {:,.2f}/5.00".format(average_rating))
+        # Add the listing to the database
+        database.insert(url, title, initial_price, sentiment_rating, price_rating, average_rating, median, lower_bound, upper_bound)
+
+    print_results(title, initial_price, sentiment_rating, price_rating, average_rating, median, lower_bound, upper_bound)
 
 if __name__ == "__main__":
     main()

@@ -45,3 +45,21 @@ def insert(url, title, initial_price, sentiment_rating, price_rating, average_ra
     except sqlite3.IntegrityError:
         # If the product already exists, do nothing
         pass
+
+def retrieve(url):
+    con = sqlite3.connect('product_database.db')
+    cur = con.cursor()
+    
+    try:
+        # Find the ID of the product
+        market_id = (re.search(r"\/item\/([0-9]*)", url)).group(1)
+
+        # Retrieve all the products from the database
+        cur.execute("SELECT id, title, initialPrice, sentimentRating, priceRating, averageRating, median, lowerBound, upperBound FROM(SELECT * FROM products p JOIN ratings r on p.id = r.id JOIN similar s on s.id = p.id) AS t WHERE id = ?", (market_id,))
+        records = cur.fetchone()
+        assert len(records) == 9 
+
+        # If the product exists, return the product
+        return records
+    except TypeError:
+        return False

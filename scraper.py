@@ -1,3 +1,6 @@
+# Database
+import database
+
 # Web Scraping
 import requests
 from bs4 import BeautifulSoup
@@ -212,6 +215,9 @@ def reject_outliers(data, m=1.5):
     return data[standard < m].tolist()
 
 def main():
+    # Initialize the database
+    database.initialize()
+
     # Get the URL of the Facebook Marketplace listing
     url = input("Enter URL: ")
 
@@ -238,6 +244,9 @@ def main():
     # Calculate the price difference between the listing and the median price of the viable products, and generate ratings
     price_rating = price_difference_rating(initial_price, median)
     average_rating = statistics.mean([sentiment_rating, price_rating])
+
+    # Add the listing to the database
+    database.insert(url, title, initial_price, sentiment_rating, price_rating, average_rating, median, lower_bound, upper_bound)
 
     print("\n● Listing:")
     print("  ○ Product: {}".format(title))

@@ -1,6 +1,9 @@
 # Database
 import database
 
+# Regular Expressions
+import re
+
 # Web Scraping
 import requests
 from bs4 import BeautifulSoup
@@ -244,8 +247,10 @@ def main():
     shortened_url = re.search(r".*[0-9]", url).group(0)
     # Use the shortened URL and convert it to mobile, to get the price of the listing
     mobile_url = shortened_url.replace("www", "m")
+    # Find the ID of the product
+    market_id = (re.search(r"\/item\/([0-9]*)", url)).group(1)
 
-    records = database.retrieve(url)
+    records = database.retrieve(market_id)
     if records:
         title = records[1]
         initial_price = records[2]
@@ -271,7 +276,7 @@ def main():
         average_rating = statistics.mean([sentiment_rating, price_rating])
 
         # Add the listing to the database
-        database.insert(url, title, initial_price, sentiment_rating, price_rating, average_rating, median, lower_bound, upper_bound)
+        database.insert(market_id, title, initial_price, sentiment_rating, price_rating, average_rating, median, lower_bound, upper_bound)
 
     print_results(title, initial_price, sentiment_rating, price_rating, average_rating, median, lower_bound, upper_bound)
 

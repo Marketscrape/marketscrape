@@ -1,5 +1,4 @@
 import sqlite3
-import re
 
 def initialize():
     con = sqlite3.connect('product_database.db')
@@ -27,12 +26,9 @@ def initialize():
 
     con.commit()
 
-def insert(url, title, initial_price, sentiment_rating, price_rating, average_rating, median, lower_bound, upper_bound):
+def insert(market_id, title, initial_price, sentiment_rating, price_rating, average_rating, median, lower_bound, upper_bound):
     con = sqlite3.connect('product_database.db')
     cur = con.cursor()
-
-    # Find the ID of the product
-    market_id = (re.search(r"\/item\/([0-9]*)", url)).group(1)
 
     try:
         # Insert the product into the database
@@ -46,14 +42,11 @@ def insert(url, title, initial_price, sentiment_rating, price_rating, average_ra
         # If the product already exists, do nothing
         pass
 
-def retrieve(url):
+def retrieve(market_id):
     con = sqlite3.connect('product_database.db')
     cur = con.cursor()
     
     try:
-        # Find the ID of the product
-        market_id = (re.search(r"\/item\/([0-9]*)", url)).group(1)
-
         # Retrieve all the products from the database
         cur.execute("SELECT id, title, initialPrice, sentimentRating, priceRating, averageRating, median, lowerBound, upperBound FROM(SELECT * FROM products p JOIN ratings r on p.id = r.id JOIN similar s on s.id = p.id) AS t WHERE id = ?", (market_id,))
         records = cur.fetchone()

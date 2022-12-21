@@ -90,9 +90,14 @@ def get_listing_description(soup):
 def get_listing_price(soup):
     # Get the price of the listing
     spans = soup.find_all("span")
+
+    # Check if the listing is free
+    free = [span.text for span in spans if "free" in span.text.lower()]
+    if (free):
+        return free
+
     # Find the span that contains the price of the listing and extract the price
     price = [str(span.text) for span in spans if "$" in span.text][0]
-
     return price
 
 def create_soup(url, headers):
@@ -268,7 +273,11 @@ def main():
         title = get_listing_title(create_soup(url, headers=None))
 
         # Get the minimum, maximum, and median prices of the viable products found on Google Shopping
-        initial_price = int(re.sub("[\$,]", "", get_listing_price(create_soup(mobile_url, headers=None))))
+        list_price = get_listing_price(create_soup(mobile_url, headers=None))
+        if list_price[0] == "FREE":
+            print("This product is free!")
+            return
+        initial_price = int(re.sub("[\$,]", "", list_price))
         lower_bound, upper_bound, median = find_viable_product(title, ramp_down=0.0)
 
         # Calculate the price difference between the listing and the median price of the viable products, and generate ratings

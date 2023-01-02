@@ -1,0 +1,14 @@
+{% extends 'scraper/base.html' %}
+
+{% block content %}
+	<div>
+		<div>
+			<h1>Marketscrape</h1>
+			<form method="POST">
+				{% csrf_token %}
+                {{ form }}
+				<button class="btn btn-primary" type="submit">Calculate</button>
+			</form>
+		</div>
+	</div>
+{% endblock content %}

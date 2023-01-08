@@ -8,6 +8,7 @@
 				{% csrf_token %}
                 {{ form }}
 				<button class="btn btn-primary" type="submit">Calculate</button>
+				<input type="button" value="Reset" id="resetBtn" onClick="this.form.reset()" />
 			</form>
 		</div>
 	</div>

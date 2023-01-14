@@ -1,19 +1,17 @@
 {% extends 'scraper/base.html' %}
 
 {% block content %}
-	<div>
-		<div>
-			<h1>Marketscrape</h1>
-            <h3>The shortened_url is: {{ shortened_url }}</h3>
-            <h3>The mobile_url is: {{ mobile_url }}</h3>
-            <h3>The market_id is: {{ market_id }}</h3>
-			<h3>The sentiment_rating is: {{ sentiment_rating }}</h3>
-			<h3>The title is: {{ title }}</h3>
-			<h3>The list price is: {{ list_price }}</h3>
-			<h3>The initial price is: {{ initial_price }}</h3>
-			<h3>lower bound: {{ lower_bound }}</h3>
-			<h3>upper bound: {{ upper_bound }}</h3>
-			<h3>median: {{ median }}</h3>
+	<a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3">Go Back</a>
+	<h1 class="col-12 col-md-6 mx-md-auto">Marketscrape Analysis Report</h1>
+	<div class="row mt-5">
+		<div class="col-12 col-md-6 mx-md-auto">
+			<h4> Product: {{ title }}</h4>
+            <h4> Price: {{ list_price }}</h4>
+			<h4> Range: ${{ lower_bound }} - ${{ upper_bound }}</h4>
+			<h4> Median: ${{ median }}</h4>
+			<h4> Description: {{ sentiment_rating }}/5.0</h4>
+			<h4> Price: {{ price_rating }}/5.0</h4>
+			<h4> Overall: {{ average_rating }}/5.0</h4>
 		</div>
 	</div>
 {% endblock content %}

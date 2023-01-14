@@ -45,6 +45,10 @@ class Index(View):
 
         lower_bound, upper_bound, median = self.find_viable_product(title, ramp_down=0.0)
 
+        # Calculate the price difference between the listing and the median price of the viable products, and generate ratings
+        price_rating = self.price_difference_rating(initial_price, median)
+        average_rating = statistics.mean([sentiment_rating, price_rating])
+
 
         context = {
             'shortened_url': shortened_url,
@@ -57,8 +61,20 @@ class Index(View):
             'lower_bound': lower_bound,
             'upper_bound': upper_bound,
             'median': median,
+            'price_rating': price_rating,
+            'average_rating': average_rating,
         }
         return render(request, 'scraper/result.html', context)
+
+    def price_difference_rating(self, initial, final):
+        # If the listing price is less than or equal to the median price found online, set the rating to 5
+        if initial <= final:
+            rating = 5.0
+        else:
+            # If the listing price is greater than the median price found online, calculate the difference
+            difference = min(initial, final) / max(initial, final)
+            rating = (difference / 20) * 100
+        return rating
 
     def find_viable_product(self, title, ramp_down):
         title = self.clean_listing_title(title)

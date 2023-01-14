@@ -1,15 +1,17 @@
 {% extends 'scraper/base.html' %}
+{% load crispy_forms_tags %}
 
 {% block content %}
-	<div>
-		<div>
+	<div class="row mt-5">
+		<div class="col-12 col-md-6 mx-md-auto">
 			<h1>Marketscrape</h1>
 			<form method="POST">
 				{% csrf_token %}
-                {{ form }}
+                {{ form|crispy }}
 				<button class="btn btn-primary" type="submit">Calculate</button>
-				<input type="button" value="Reset" id="resetBtn" onClick="this.form.reset()" />
+				<!--<input type="button" value="Reset" id="resetBtn" onClick="this.form.reset()" />-->
 			</form>
+			<p> <br> Introducing the ultimate tool for Facebook Marketplace shopping. Marketscrape uses advanced AI technology to analyze prices of the latest posts, quickly letting you know if the price is a good deal or if you should keep looking. Take the guesswork out of shopping and find the best deals with just a click.</p>
 		</div>
 	</div>
 {% endblock content %}

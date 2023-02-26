@@ -24,20 +24,20 @@ class Index(View):
         form = MarketForm(request.POST)
 
         if form.is_valid():
-            input_url = form.cleaned_data['input_url']
+            url = form.cleaned_data['url']
 
         # Shorten the URL listing to the title of the listing
-        shortened_url = re.search(r".*[0-9]", input_url).group(0)
+        shortened_url = re.search(r".*[0-9]", url).group(0)
         # Use the shortened URL and convert it to mobile, to get the price of the listing
         mobile_url = shortened_url.replace("www", "m")
         # Find the ID of the product
-        market_id = (re.search(r"\/item\/([0-9]*)", input_url)).group(1)
+        market_id = (re.search(r"\/item\/([0-9]*)", url)).group(1)
         
         # Get the sentiment rating of the listing
-        sentiment_rating = self.sentiment_analysis(self.get_listing_description(self.create_soup(input_url, headers=None)))
+        sentiment_rating = self.sentiment_analysis(self.get_listing_description(self.create_soup(url, headers=None)))
 
         # Get the title of the listing
-        title = self.get_listing_title(self.create_soup(input_url, headers=None))
+        title = self.get_listing_title(self.create_soup(url, headers=None))
         
          # Get the minimum, maximum, and median prices of the viable products found on Google Shopping
         list_price = self.get_listing_price(self.create_soup(mobile_url, headers=None))

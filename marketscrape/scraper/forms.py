@@ -1,4 +1,7 @@
 from django import forms
 
 class MarketForm(forms.Form):
-    input_url = forms.URLField()
+    url = forms.URLField(label=False, widget=forms.TextInput(attrs={
+        'class': 'form-control',
+        'placeholder': 'Enter a Facebook Marketplace URL',
+    }))

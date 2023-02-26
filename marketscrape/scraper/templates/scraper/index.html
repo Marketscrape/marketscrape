@@ -2,16 +2,50 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-	<div class="row mt-5">
-		<div class="col-12 col-md-6 mx-md-auto">
-			<h1>Marketscrape</h1>
-			<form method="POST">
-				{% csrf_token %}
-                {{ form|crispy }}
-				<button class="btn btn-primary" type="submit">Calculate</button>
-				<!--<input type="button" value="Reset" id="resetBtn" onClick="this.form.reset()" />-->
-			</form>
-			<p> <br> Introducing the ultimate tool for Facebook Marketplace shopping. Marketscrape uses advanced AI technology to analyze prices of the latest posts, quickly letting you know if the price is a good deal or if you should keep looking. Take the guesswork out of shopping and find the best deals with just a click.</p>
-		</div>
-	</div>
+    <div class="container-lg mt-5">
+        <h1 class="text-center mb-4">Marketscrape</h1>
+        <p class="text-center mb-4">Shop smarter with AI-driven analysis by Marketscrape</p>
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        {{ form }}
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="submit">Calculate</button>
+                            <button class="btn btn-primary" type="button" value="Reset" id="resetBtn" onClick="this.form.reset()">Clear</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="mt-5">
+                    <h3 class="text-center">Search Results</h3>
+                    <table class="table table-striped mx-auto">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Score</th>
+                                <th>Link</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in results %}
+                                <tr>
+                                    <td>{{ result.item }}</td>
+                                    <td>{{ result.price }}</td>
+                                    <td><a href="{{ result.link }}" target="_blank">{{ result.link }}</a></td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No results to display.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center mt-5">
+                    <a href="https://github.com/alexwholland" target="_blank"><i class="fab fa-github fa-3x"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock content %}

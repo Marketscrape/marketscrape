@@ -32,6 +32,8 @@ class Index(View):
         mobile_url = shortened_url.replace("www", "m")
         # Find the ID of the product
         market_id = (re.search(r"\/item\/([0-9]*)", url)).group(1)
+
+        image = self.get_listing_image(self.create_soup(mobile_url, headers=None))
         
         # Get the sentiment rating of the listing
         sentiment_rating = self.sentiment_analysis(self.get_listing_description(self.create_soup(url, headers=None)))
@@ -39,7 +41,7 @@ class Index(View):
         # Get the title of the listing
         title = self.get_listing_title(self.create_soup(url, headers=None))
         
-         # Get the minimum, maximum, and median prices of the viable products found on Google Shopping
+        # Get the minimum, maximum, and median prices of the viable products found on Google Shopping
         list_price = self.get_listing_price(self.create_soup(mobile_url, headers=None))
         initial_price = int(re.sub("[\$,]", "", list_price))
 
@@ -63,6 +65,7 @@ class Index(View):
             'median': median,
             'price_rating': price_rating,
             'average_rating': average_rating,
+            'image': image[0],
         }
         return render(request, 'scraper/result.html', context)
 
@@ -186,6 +189,13 @@ class Index(View):
         # Find the span that contains the price of the listing and extract the price
         price = [str(span.text) for span in spans if "$" in span.text][0]
         return price
+    
+    def get_listing_image(self, soup):
+        # Get the image of the listing
+        images = soup.find_all("img")
+        # Find the image that is the listing image
+        image = [image["src"] for image in images if "https://scontent" in image["src"]]
+        return image
 
     def get_listing_title(self, soup):
         # Get the title of the listing
@@ -239,6 +249,3 @@ class Index(View):
         else:
             rating = 5 * neu
         return abs(rating)
-
-
-    

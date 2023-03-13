@@ -13,7 +13,7 @@ from difflib import SequenceMatcher
 
 import statistics
 import numpy as np
-
+import datetime
 
 class Index(View):
     def get(self, request):
@@ -33,7 +33,11 @@ class Index(View):
         # Find the ID of the product
         market_id = (re.search(r"\/item\/([0-9]*)", url)).group(1)
 
+        # Get the image of the listing
         image = self.get_listing_image(self.create_soup(mobile_url, headers=None))
+
+        # Get the number of days and hours the listing has been active
+        days, hours = self.get_listing_date(self.create_soup(mobile_url, headers=None))
         
         # Get the sentiment rating of the listing
         sentiment_rating = self.sentiment_analysis(self.get_listing_description(self.create_soup(url, headers=None)))
@@ -43,6 +47,7 @@ class Index(View):
         
         # Get the minimum, maximum, and median prices of the viable products found on Google Shopping
         list_price = self.get_listing_price(self.create_soup(mobile_url, headers=None))
+        list_price = re.sub("[\$,]", "", list_price)
         initial_price = int(re.sub("[\$,]", "", list_price))
 
         lower_bound, upper_bound, median = self.find_viable_product(title, ramp_down=0.0)
@@ -51,22 +56,24 @@ class Index(View):
         price_rating = self.price_difference_rating(initial_price, median)
         average_rating = statistics.mean([sentiment_rating, price_rating])
 
-
         context = {
             'shortened_url': shortened_url,
             'mobile_url': mobile_url,
             'market_id': market_id,
-            'sentiment_rating': sentiment_rating,
+            'sentiment_rating': round(sentiment_rating, 1),
             'title': title,
-            'list_price': list_price,
+            'list_price': "{0:,.2f}".format(float(list_price)),
             'initial_price': initial_price,
-            'lower_bound': lower_bound,
-            'upper_bound': upper_bound,
-            'median': median,
-            'price_rating': price_rating,
-            'average_rating': average_rating,
+            'lower_bound': "{0:,.2f}".format(lower_bound),
+            'upper_bound': "{0:,.2f}".format(upper_bound),
+            'median': "{0:,.2f}".format(median),
+            'price_rating': round(price_rating, 1),
+            'average_rating': round(average_rating, 1),
+            'days': days,
+            'hours': hours,
             'image': image[0],
         }
+
         return render(request, 'scraper/result.html', context)
 
     def price_difference_rating(self, initial, final):
@@ -77,6 +84,7 @@ class Index(View):
             # If the listing price is greater than the median price found online, calculate the difference
             difference = min(initial, final) / max(initial, final)
             rating = (difference / 20) * 100
+
         return rating
 
     def find_viable_product(self, title, ramp_down):
@@ -141,12 +149,14 @@ class Index(View):
     def get_product_description(self, soup):
         # Get the description of the product
         description = soup.find_all("div", {"class": "rgHvZc"})
+
         return description
 
     def reject_outliers(self, data, m=1.5):
         distribution = np.abs(data - np.median(data))
         m_deviation = np.median(distribution)
         standard = distribution / (m_deviation if m_deviation else 1.)
+
         return data[standard < m].tolist()
 
 
@@ -175,6 +185,7 @@ class Index(View):
         # Certain symbols are not allowed in the search query for Google Shopping, so they must be removed
         title = re.sub(r"#", "%2", title)
         title = re.sub(r"&", "%26", title)
+
         return title
 
     def get_listing_price(self, soup):
@@ -188,6 +199,7 @@ class Index(View):
 
         # Find the span that contains the price of the listing and extract the price
         price = [str(span.text) for span in spans if "$" in span.text][0]
+
         return price
     
     def get_listing_image(self, soup):
@@ -195,6 +207,7 @@ class Index(View):
         images = soup.find_all("img")
         # Find the image that is the listing image
         image = [image["src"] for image in images if "https://scontent" in image["src"]]
+
         return image
 
     def get_listing_title(self, soup):
@@ -202,12 +215,40 @@ class Index(View):
         title = soup.find("meta", {"name": "DC.title"})
         title_content = title["content"]
         return title_content
+    
+    def get_listing_date(self, soup):
+        tag = soup.find('abbr')
+        tag = tag.text.strip()
+
+        month_str = re.search(r"[a-zA-Z]+", tag).group(0)
+        month_num = datetime.datetime.strptime(month_str, '%B').month
+
+        date_str = re.search(r"[0-9]+", tag).group(0)
+        year_str = datetime.datetime.now().year
+
+        time_str = re.search(r"[0-9]+:[0-9]+", tag).group(0)
+        am_pm = re.search(r"[A-Z]{2}", tag).group(0)
+        formated_time = f'{time_str}:00 {am_pm}'
+
+        date_str = f'{year_str}-{month_num}-{date_str}'
+
+        dt_str = f'{date_str} {formated_time}'
+        dt = datetime.datetime.strptime(dt_str, '%Y-%m-%d %I:%M:%S %p')
+
+        now = datetime.datetime.now()
+        diff = now - dt
+
+        days = diff.days
+        hours = diff.seconds // 3600
+
+        return days, hours
 
     def create_soup(self, url, headers):
         # Create a request object 
         response = requests.get(url, headers=headers)
         # Create a BeautifulSoup object
         soup = BeautifulSoup(response.text, 'html.parser')
+
         return soup
 
     def clean_text(self, text):
@@ -232,6 +273,7 @@ class Index(View):
         # Get the description of the listing
         description = soup.find("meta", {"name": "DC.description"})
         description_content = description["content"]
+
         return self.clean_text(description_content)
 
     def sentiment_analysis(self, text):
@@ -248,4 +290,5 @@ class Index(View):
             rating = 5 * min(neg, compound)
         else:
             rating = 5 * neu
+
         return abs(rating)

@@ -1,24 +1,46 @@
 {% extends 'scraper/base.html' %}
 
 {% block content %}
-    <a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3">Go Back</a>
-    <h1 class="col-12 col-md-6 mx-md-auto">Marketscrape Analysis Report</h1>
-    <div class="row mt-5">
-        <div class="col-12 col-md-6 mx-md-auto">
+<a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3">Go Back</a>
+<div class="container">
+    <h1 class="text-center mb-4">Marketscrape Analysis Report</h1>
+    <div class="row">
+        <div class="col-12 col-md-6 mx-auto">
             <div class="row">
-                <div class="col-md-6">
-                    <h4> Product: {{ title }}</h4>
-                    <h4> Price: {{ list_price }}</h4>
-                    <h4> Range: ${{ lower_bound }} - ${{ upper_bound }}</h4>
-                    <h4> Median: ${{ median }}</h4>
-                    <h4> Description: {{ sentiment_rating }}/5.0</h4>
-                    <h4> Price: {{ price_rating }}/5.0</h4>
-                    <h4> Overall: {{ average_rating }}/5.0</h4>
-                </div>
-                <div class="col-12 col-md-6">
-					<img src="{{ image }}" style="width: 50%;">
+                <div class="col-md-6 mx-auto">
+                    <figure class="figure">
+                        <img src=" {{ image }}" class="figure-img img-fluid rounded center" style="object-fit: fill;">
+                        <figcaption class="figure-caption"><code>{{ title }}</code> was listed <code>{{ days }} days</code> and <code>{{ hours }} hours</code> ago, for <code>${{ list_price}}</code>.</figcaption>
+                      </figure>
+                      <div class="table-responsive">
+                        <table class="table table-striped">
+                          <tbody>
+                            <tr>
+                              <td>Range:</td>
+                              <td>${{ lower_bound }} - ${{ upper_bound }}</td>
+                            </tr>
+                            <tr>
+                              <td>Median:</td>
+                              <td>${{ median }}</td>
+                            </tr>
+                            <tr>
+                              <td>Description:</td>
+                              <td>{{ sentiment_rating }}/5.0</td>
+                            </tr>
+                            <tr>
+                              <td>Price:</td>
+                              <td>{{ price_rating }}/5.0</td>
+                            </tr>
+                            <tr>
+                              <td>Overall:</td>
+                              <td>{{ average_rating }}/5.0</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 {% endblock content %}

@@ -120,6 +120,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+STATICFILES_DIRS = [BASE_DIR / "scraper/static"]
+
+STATIC_ROOT = '/scraper/static/'
+
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
 # Default primary key field type

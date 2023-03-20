@@ -9,16 +9,16 @@ import statistics
 import requests
 import re
 
-"""
-Cleans a string of text by removing punctuation and extra whitespace.
-
-Args:
-    text: The string of text to clean.
-
-Returns:
-    The cleaned string of text.
-"""
 def clean_text(text: str) -> str:
+    """
+    Cleans a string of text by removing punctuation and extra whitespace.
+
+    Args:
+        text: The string of text to clean.
+
+    Returns:
+        The cleaned string of text.
+    """
     tokenizer = RegexpTokenizer('\w+|\$[\d\.]+|http\S+')
     tokenized = tokenizer.tokenize(text)
     tokenized = [word.lower() for word in tokenized]
@@ -31,61 +31,61 @@ def clean_text(text: str) -> str:
     
     return " ".join(lemmatized)
 
-"""
-Clean a listing title by removing punctuation and converting to lowercase.
-
-Args:
-    title: The listing title to clean.
-
-Returns:
-    The cleaned listing title.
-"""
 def clean_listing_title(title: str) -> str:
+    """
+    Clean a listing title by removing punctuation and converting to lowercase.
+
+    Args:
+        title: The listing title to clean.
+
+    Returns:
+        The cleaned listing title.
+    """
     title = re.sub(r"#", "%2", title)
     title = re.sub(r"&", "%26", title)
 
     return title
 
-"""
-Remove non-ASCII characters from title and description fields.
-
-Args:
-    title (str): Title of the item.
-
-Returns:
-    str: Cleaned title.
-"""
 def clean_title_description(title: str) -> str:
+    """
+    Remove non-ASCII characters from title and description fields.
+
+    Args:
+        title (str): Title of the item.
+
+    Returns:
+        str: Cleaned title.
+    """
     cleaned = re.sub(r"[^A-Za-z0-9\s]+", " ", title)
     cleaned = re.sub(r"\s+", " ", cleaned)
 
     return cleaned
 
-"""
-Returns the product description in the soup.
-
-Args:
-    soup: a BeautifulSoup object containing a product page
-
-Returns:
-    The product description
-"""
 def get_product_description(soup: BeautifulSoup) -> str:
+    """
+    Returns the product description in the soup.
+
+    Args:
+        soup: a BeautifulSoup object containing a product page
+
+    Returns:
+        The product description
+    """
     description = soup.find_all("div", {"class": "rgHvZc"})
 
     return description
 
-"""
-Extracts the price of each product from the HTML.
-
-Args:
-    soup: The HTML to extract the price from.
-    
-Returns:
-    The price of each product. The price is represented as a
-    NumPy array.
-"""
 def get_product_price(soup: BeautifulSoup) -> np.ndarray:
+    """
+    Extracts the price of each product from the HTML.
+
+    Args:
+        soup: The HTML to extract the price from.
+        
+    Returns:
+        The price of each product. The price is represented as a
+        NumPy array.
+    """
     prices = soup.find_all("span", {"class": "HRLxBb"})
 
     values = []
@@ -100,15 +100,15 @@ def get_product_price(soup: BeautifulSoup) -> np.ndarray:
 
     return outlierless
 
-"""
-Returns the sentiment score of the text, with higher values indicating a more positive sentiment.
-
-Args:
-    text (str): The text to analyze.
-Returns:
-    float: The sentiment score, with higher values indicating a more positive sentiment.
-"""
 def sentiment_analysis(text: str) -> float:
+    """
+    Returns the sentiment score of the text, with higher values indicating a more positive sentiment.
+
+    Args:
+        text (str): The text to analyze.
+    Returns:
+        float: The sentiment score, with higher values indicating a more positive sentiment.
+    """
     sia = SentimentIntensityAnalyzer()
     sentiment = sia.polarity_scores(text)
     neg, neu, pos, compound = sentiment["neg"], sentiment["neu"], sentiment["pos"], sentiment["compound"]
@@ -122,57 +122,57 @@ def sentiment_analysis(text: str) -> float:
 
     return abs(rating)
 
-"""
-Create a BeautifulSoup object from a URL.
-
-Args:
-    url (str): URL of the page to scrape
-    headers (dict): Dictionary of headers to use in the request
-Returns:
-    BeautifulSoup: BeautifulSoup object of the URL's HTML content
-"""
 def create_soup(url: str, headers: dict) -> BeautifulSoup:
+    """
+    Create a BeautifulSoup object from a URL.
+
+    Args:
+        url (str): URL of the page to scrape
+        headers (dict): Dictionary of headers to use in the request
+    Returns:
+        BeautifulSoup: BeautifulSoup object of the URL's HTML content
+    """
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
 
     return soup
 
-"""
-This function rejects outliers from the input list of data. The outliers are rejected using the
-Tukey method, which defines the outliers as the data that are more than m times the interquartile
-range outside the first and third quartiles. The default value of m is 1.5, but can be changed
-by the user.
-
-Args:
-    data: A list of float values.
-    m: A float value defining the number of interquartile ranges outside which the data are
-        considered outliers. The default value is 1.5.
-
-Returns:
-    A list of float values, with the outliers removed.
-"""
 def reject_outliers(data: list[float], m: float = 1.5) -> list[float]:
+    """
+    This function rejects outliers from the input list of data. The outliers are rejected using the
+    Tukey method, which defines the outliers as the data that are more than m times the interquartile
+    range outside the first and third quartiles. The default value of m is 1.5, but can be changed
+    by the user.
+
+    Args:
+        data: A list of float values.
+        m: A float value defining the number of interquartile ranges outside which the data are
+            considered outliers. The default value is 1.5.
+
+    Returns:
+        A list of float values, with the outliers removed.
+    """
     distribution = np.abs(data - np.median(data))
     m_deviation = np.median(distribution)
     standard = distribution / (m_deviation if m_deviation else 1.)
 
     return data[standard < m].tolist()
 
-"""
-The rating is based on the difference between the initial and final
-price. The rating is 0 if the final price is greater than the initial
-price, and 1 if the initial price is greater than the final price.
-Otherwise, the rating is the ratio of the initial price to the final
-price.
-
-Args:
-    initial: The initial price.
-    final: The final price.
-
-Returns:
-    The rating.
-"""
 def price_difference_rating(initial: float, final: float) -> float:
+    """
+    The rating is based on the difference between the initial and final
+    price. The rating is 0 if the final price is greater than the initial
+    price, and 1 if the initial price is greater than the final price.
+    Otherwise, the rating is the ratio of the initial price to the final
+    price.
+
+    Args:
+        initial: The initial price.
+        final: The final price.
+
+    Returns:
+        The rating.
+    """
     if initial <= final:
         rating = 5.0
     else:
@@ -181,20 +181,20 @@ def price_difference_rating(initial: float, final: float) -> float:
 
     return rating
 
-"""
-Finds viable products based on the title of the Marketplace listing,
-and utilizes the ramp down of the previous product in the sequence, to 
-find the minimum, maximum, and median of the prices of the product.
-
-Args:
-    title: The title of the product.
-    ramp_down: The ramp down of the previous product in the
-        sequence.
-
-Returns:
-    The minimum, maximum, and median of the prices of the product.
-"""
 def find_viable_product(title: str, ramp_down: float) -> tuple[float, float, float]:
+    """
+    Finds viable products based on the title of the Marketplace listing,
+    and utilizes the ramp down of the previous product in the sequence, to 
+    find the minimum, maximum, and median of the prices of the product.
+
+    Args:
+        title: The title of the product.
+        ramp_down: The ramp down of the previous product in the
+            sequence.
+
+    Returns:
+        The minimum, maximum, and median of the prices of the product.
+    """
     cleaned_title = clean_listing_title(title)
     headers = { 
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"
@@ -218,18 +218,18 @@ def find_viable_product(title: str, ramp_down: float) -> tuple[float, float, flo
     
     return min(prices), max(prices), median
 
-"""
-Returns a dictionary of all products listed on the page that are similar to the given title.
-
-Args:
-    soup (BeautifulSoup): The parsed HTML of the page.
-    title (str): The title of the product to compare against.
-    similarity_threshold (float): The minimum similarity ratio to consider a product similar.
-
-Returns:
-    dict: A dictionary mapping the product ID to the product title.
-"""
 def listing_product_similarity(soup: BeautifulSoup, title: str, similarity_threshold: float) -> dict:
+    """
+    Returns a dictionary of all products listed on the page that are similar to the given title.
+
+    Args:
+        soup (BeautifulSoup): The parsed HTML of the page.
+        title (str): The title of the product to compare against.
+        similarity_threshold (float): The minimum similarity ratio to consider a product similar.
+
+    Returns:
+        dict: A dictionary mapping the product ID to the product title.
+    """
     normalized = get_product_price(soup)
     description = get_product_description(soup)
 

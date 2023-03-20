@@ -22,17 +22,19 @@
                     <table class="table table-striped mx-auto">
                         <thead>
                             <tr>
+                                <th></th>
                                 <th>Item</th>
-                                <th>Score</th>
-                                <th>Link</th>
+                                <th>Rating</th>
+                                <th>Report</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for result in results %}
+                            {% for item in latest_items %}
                                 <tr>
-                                    <td>{{ result.item }}</td>
-                                    <td>{{ result.price }}</td>
-                                    <td><a href="{{ result.link }}" target="_blank">{{ result.link }}</a></td>
+                                    <td style="vertical-align: middle;"><img src="{{ item.image }}" style="width:30%;" class="figure-img img-fluid rounded" style="object-fit: fill;"></td>
+                                    <td style="vertical-align: middle;"><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></td>
+                                    <td style="vertical-align: middle;">{{ item.rating }}/5.0</td>
+                                    <td style="vertical-align: middle;"></td>
                                 </tr>
                             {% empty %}
                                 <tr>

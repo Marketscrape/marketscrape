@@ -28,19 +28,7 @@
                                 <th>Report</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {% for item in latest_items %}
-                                <tr>
-                                    <td style="vertical-align: middle;"><img src="{{ item.image }}" style="width:30%;" class="figure-img img-fluid rounded" style="object-fit: fill;"></td>
-                                    <td style="vertical-align: middle;"><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></td>
-                                    <td style="vertical-align: middle;">{{ item.rating }}/5.0</td>
-                                    <td style="vertical-align: middle;"></td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="3" class="text-center">No results to display.</td>
-                                </tr>
-                            {% endfor %}
+                        <tbody id="result-table">
                         </tbody>
                     </table>
                 </div>
@@ -50,4 +38,22 @@
             </div>
         </div>
     </div>
+    
+    <script>
+        // Get all the keys in localStorage
+        for (var i = localStorage.length - 1; i >= 0; i--) {
+            var shortened_url = localStorage.key(i);
+            var data = JSON.parse(localStorage.getItem(shortened_url));
+            console.log(data)
+            // Create a row for the item and add it to the table
+            var row = document.createElement("tr");
+            row.innerHTML = `
+                <td style="vertical-align: middle;"><img src="${data.image}" style="width:25%;" class="figure-img img-fluid rounded" style="object-fit: fill;"></td>
+                <td style="vertical-align: middle;"><a href="${ shortened_url }" target="_blank">${ data.title }</a></td>
+                <td style="vertical-align: middle;">${data.rating}/5.0</td>
+                <td style="vertical-align: middle;"></td>
+            `;
+            document.getElementById("result-table").appendChild(row);
+        }
+    </script>
 {% endblock content %}

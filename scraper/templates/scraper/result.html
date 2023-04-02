@@ -1,6 +1,18 @@
 {% extends 'scraper/base.html' %}
 
 {% block content %}
+<script>
+  var item = {
+      image: "{{ image }}",
+      title: "{{ title }}",
+      rating: "{{ average_rating }}",
+  };
+  var shortened_url = "{{ shortened_url }}";
+  console.log("shortened_url:", shortened_url);
+  localStorage.setItem(shortened_url, JSON.stringify(item));
+  console.log(localStorage.getItem(shortened_url));
+</script>
+
 <a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3">Go Back</a>
 <div class="container">
     <h1 class="text-center mb-4">Marketscrape Analysis Report</h1>

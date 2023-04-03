@@ -24,8 +24,9 @@
                             <tr>
                                 <th></th>
                                 <th>Item</th>
+                                <th>Price</th>
                                 <th>Rating</th>
-                                <th>Report</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody id="result-table">
@@ -50,10 +51,21 @@
             row.innerHTML = `
                 <td style="vertical-align: middle;"><img src="${data.image}" style="width:25%;" class="figure-img img-fluid rounded" style="object-fit: fill;"></td>
                 <td style="vertical-align: middle;"><a href="${ shortened_url }" target="_blank">${ data.title }</a></td>
+                <td style="vertical-align: middle;">$${data.price}</td>
                 <td style="vertical-align: middle;">${data.rating}/5.0</td>
-                <td style="vertical-align: middle;"></td>
+                <td style="vertical-align: middle;"><button class="btn btn-primary btn-md report-button" data-url="${shortened_url}">Report</button></td>
             `;
             document.getElementById("result-table").appendChild(row);
+        }
+        
+        // Add event listener to report button
+        var reportButtons = document.getElementsByClassName("report-button");
+        for (var i = 0; i < reportButtons.length; i++) {
+            reportButtons[i].addEventListener("click", function() {
+                var url = this.getAttribute("data-url");
+                document.getElementById("id_url").value = url;
+                document.querySelector('form').submit();
+            });
         }
     </script>
 {% endblock content %}

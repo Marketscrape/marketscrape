@@ -9,7 +9,7 @@ $ https://github.com/Marketscrape/marketscrape.git
 
 ### Local setup using Docker
 - First, install [docker](https://docs.docker.com/get-docker/) and [docker-compose](https://docs.docker.com/compose/install/).
-- Next, run the following command that will pull a pre-built image from DockerHub and will run your website.
+- Next, run the following command to start the container. 
 
 ```bash
 $ docker compose up

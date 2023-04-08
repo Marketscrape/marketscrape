@@ -18,9 +18,10 @@ body:
     attributes:
       label: Summary
       description: Explain the problem briefly below.
-      placeholder:  When I try to do X with marketscrape from the main branch on GitHub, Y
-      breaks in a way Z under the env E. Here are all the details I know
-      about this problem...
+      placeholder: >-
+        When I try to do X with marketscrape from the main branch on GitHub, Y
+        breaks in a way Z under the env E. Here are all the details I know
+        about this problem...
     validations:
       required: true
         

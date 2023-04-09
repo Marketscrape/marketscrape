@@ -5,13 +5,11 @@ from .utils import *
 from .scraper_class import FacebookScraper
 import re
 import statistics
-from .models import Item
 
 class Index(View):
     def get(self, request):
         form = MarketForm()
-        latest_items = Item.objects.all().order_by('-id')[:10]
-        context = {'form': form, 'latest_items': latest_items}
+        context = {'form': form}
         return render(request, 'scraper/index.html', context)
 
     def post(self, request):
@@ -39,10 +37,7 @@ class Index(View):
             lower_bound, upper_bound, median = find_viable_product(title, ramp_down=0.0)
             price_rating = price_difference_rating(initial_price, median)
             average_rating = statistics.mean([sentiment_rating, price_rating])
-
-            # Create a new Item object
             average_rating = round(average_rating, 1)
-            item = Item.objects.create(image=listing_image[0], title=title, rating=average_rating, url=shortened_url)
 
             context = {
                 'shortened_url': shortened_url,
@@ -64,8 +59,3 @@ class Index(View):
             }
 
             return render(request, 'scraper/result.html', context)
-
-        else:
-            latest_items = Item.objects.all().order_by('-id')[:10]
-            context = {'form': form, 'latest_items': latest_items}
-            return render(request, 'scraper/index.html', context)

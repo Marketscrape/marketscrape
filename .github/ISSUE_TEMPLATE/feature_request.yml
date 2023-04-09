@@ -1,0 +1,83 @@
+---
+name: ✨ Feature request
+description: Suggest an idea for this project
+
+body:
+- type: markdown
+  attributes:
+    value: >
+      **Thank you for wanting to suggest a feature for Marketscrape!**
+
+      ⚠
+      Verify first that your idea is not [already requested on
+      GitHub][issue search].
+
+      Also test if the main branch does not already implement this.
+
+- type: textarea
+  attributes:
+    label: Summary
+    description: >
+      Describe the new feature/improvement you would like briefly below.
+
+
+      What's the problem this feature will solve?
+
+      What are you trying to do, that you are unable to achieve
+      with marketscrape as it currently stands?
+
+
+      * Provide examples of real-world use cases that this would enable
+      and how it solves the problem you described.
+
+      * How do you solve this now?
+
+      * Have you tried to work around the problem using other tools?
+
+      * Could there be a different approach to solving this issue?
+
+
+      *Know **exactly** what you want?* Consider filing a [new proposal]
+      instead outlining your research and implementation considerations.
+
+
+      [new proposal]: ../../proposals/issues/new
+    placeholder: >-
+      I am trying to do X with marketscrape from the main branch on GitHub and
+      I think that implementing a feature Y would be very helpful for me and
+      every other user of marketscrape because of Z.
+  validations:
+    required: true
+
+- type: input
+  attributes:
+    label: Component Name
+    description: >
+      Write the short name of the module, plugin, task or feature below,
+      *use your best guess if unsure*.
+    placeholder: marketscrape/scraper/utils.py
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: Additional Information
+    description: |
+      Describe how the feature would be used, why it is needed and what it would solve.
+
+      **HINT:** You can paste https://gist.github.com links for larger files.
+    placeholder: >-
+      I asked on https://stackoverflow.com/.... and the community
+      advised me to do X, Y and Z.
+  validations:
+    required: true
+
+- type: checkboxes
+  attributes:
+    label: Code of Conduct
+    description: |
+      Read the Marketscrape Code of Conduct first.
+    options:
+    - label: I agree to follow the Marketscrape Code of Conduct
+      required: true
+...

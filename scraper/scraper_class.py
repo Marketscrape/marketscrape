@@ -69,3 +69,12 @@ class FacebookScraper:
         description_content = description["content"]
 
         return clean_text(description_content)
+
+    def is_listing_missing(self) -> bool:
+        title_element = self.mobile_soup.find("title")
+        title = title_element.get_text()
+
+        if title.lower() == "page not found":
+            return True
+
+        return False

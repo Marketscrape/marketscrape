@@ -23,6 +23,10 @@ class Index(View):
             base_soup = create_soup(url, headers=None)
             scraper_instance = FacebookScraper(mobile_soup, base_soup)
 
+            is_listing_missing = scraper_instance.is_listing_missing()
+            if is_listing_missing:
+                return render(request, 'scraper/missing.html')
+
             listing_image = scraper_instance.get_listing_image()
             listing_days, listing_hours = scraper_instance.get_listing_date()
             listing_description = scraper_instance.get_listing_description()

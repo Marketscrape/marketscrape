@@ -74,7 +74,10 @@ class FacebookScraper:
         title_element = self.mobile_soup.find("title")
         title = title_element.get_text()
 
-        if title.lower() == "page not found":
+        text_to_find = "Buy and sell things locally on Facebook Marketplace."
+        found = self.mobile_soup.find(string=text_to_find)
+
+        if title.lower() == "page not found" or found:
             return True
 
         return False

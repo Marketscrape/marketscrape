@@ -19,3 +19,4 @@ sqlparse==0.4.3
 tqdm==4.65.0
 tzdata==2023.3
 urllib3==1.26.15
+fontawesomefree==5.15.4

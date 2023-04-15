@@ -4,17 +4,19 @@
 {% block content %}
     <div class="container-lg mt-5">
         <h1 class="text-center">Marketscrape</h1>
-        <p class="text-center mb-4">Shop smarter with AI-driven analysis by Marketscrape</p>
+        <p class="text-center mb-4">Shop smarter with <span class="gradient-text">AI-driven</span> analysis by Marketscrape </p>
         <div class="row">
             <div class="col-md-8 mx-auto">
-                <form method="POST">
+                <form method="POST" id="MarketForm">
                     {% csrf_token %}
                     <div class="input-group">
                         {{ form }}
-                        <div class="input-group-append">
-                            <button class="btn btn-primary" type="submit">Calculate</button>
-                            <button class="btn btn-primary" type="button" value="Reset" id="resetBtn" onClick="this.form.reset()">Clear</button>
+                        <div class="btn-group">
+                            <button class="btn btn-secondary" style="border-radius: 0;" type="submit">Calculate</button>
+                            <button class="btn btn-secondary" type="button" value="Reset" id="resetBtn" onClick="this.form.reset()">Clear</button>
                         </div>
+                        <div id="urlValidFeedback" class="valid-feedback">Success! You've entered a valid URL.</div>
+                        <div id="urlInvalidFeedback" class="invalid-feedback">Sorry, that URL is invalid. Try another?</div>
                     </div>
                 </form>
                 <div class="mt-5">
@@ -33,13 +35,37 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="text-center mt-5">
-                    <a href="https://github.com/alexwholland" target="_blank"><i class="fab fa-github fa-3x"></i></a>
-                </div>
             </div>
         </div>
     </div>
     
+    <script>
+        function isValidUrl(url) {
+            const regex = new RegExp(/https:\/\/www\.facebook\.com\/marketplace\/item\/[0-9]{15,16}\//g);
+
+            if (regex.test(url)){
+                return true;
+            }
+
+            return false;
+        }
+
+        document.getElementById('MarketForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var inputUrl = document.getElementById('id_url');
+            if (isValidUrl(inputUrl.value)) {
+                inputUrl.classList.add('is-valid');
+                inputUrl.classList.remove('is-invalid');
+                this.submit();
+            } else {
+                inputUrl.classList.add('is-invalid');
+                inputUrl.classList.remove('is-valid');
+            }
+
+        });
+    </script>
+
     <script>
         // Get all the keys in localStorage
         for (var i = localStorage.length - 1; i >= 0; i--) {

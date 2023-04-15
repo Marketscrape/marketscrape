@@ -4,3 +4,15 @@
             background-clip: text;
     color: transparent;
 }
+
+#clearResultsBtn:hover {
+    /* Use Bootswatch is-invalid color */
+    color: #dc3545;
+    transition: color 0.25s ease-in;
+}
+
+#closeAlertBtn:hover {
+    /* Use Bootswatch is-invalid color */
+    color: #dc3545;
+    transition: color 0.25s ease-in;
+}

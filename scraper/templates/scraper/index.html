@@ -1,7 +1,12 @@
 {% extends 'scraper/base.html' %}
 {% load crispy_forms_tags %}
+{% load static %}
 
 {% block content %}
+    <div class="alert alert-success alert-dismissible" id="myAlert" style="display:none;">
+        <span aria-hidden="true"><i class="fas fa-solid fa-times" id="closeAlertBtn" style="cursor: pointer;"></i></span> Cleared your search results! Please refresh the page to apply changes.
+    </div>
+
     <div class="container-lg mt-5">
         <h1 class="text-center">Marketscrape</h1>
         <p class="text-center mb-4">Shop smarter with <span class="gradient-text">AI-driven</span> analysis by Marketscrape </p>
@@ -20,78 +25,25 @@
                     </div>
                 </form>
                 <div class="mt-5">
-                    <h3 class="text-center" style="margin-top: 80px;">Search Results</h3>
+                    <h3 class="text-center" style="margin-top: 80px;">
+                        <i class="fas fa-trash-alt" id="clearResultsBtn" style="cursor: pointer;"></i> Search Results
+                    </h3>
                     <table class="table table-striped mx-auto">
                         <thead>
                             <tr>
                                 <th></th>
-                                <th>Item</th>
-                                <th>Price</th>
-                                <th>Rating</th>
-                                <th></th>
+                                    <th>Item</th>
+                                    <th>Price</th>
+                                    <th>Rating</th>   
                             </tr>
                         </thead>
-                        <tbody id="result-table">
-                        </tbody>
+                        <tbody id="result-table"></tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
-    
-    <script>
-        function isValidUrl(url) {
-            const regex = new RegExp(/https:\/\/www\.facebook\.com\/marketplace\/item\/[0-9]{15,16}\//g);
 
-            if (regex.test(url)){
-                return true;
-            }
-
-            return false;
-        }
-
-        document.getElementById('MarketForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            var inputUrl = document.getElementById('id_url');
-            if (isValidUrl(inputUrl.value)) {
-                inputUrl.classList.add('is-valid');
-                inputUrl.classList.remove('is-invalid');
-                this.submit();
-            } else {
-                inputUrl.classList.add('is-invalid');
-                inputUrl.classList.remove('is-valid');
-            }
-
-        });
-    </script>
-
-    <script>
-        // Get all the keys in localStorage
-        for (var i = localStorage.length - 1; i >= 0; i--) {
-            var shortened_url = localStorage.key(i);
-            var data = JSON.parse(localStorage.getItem(shortened_url));
-            console.log(data)
-            // Create a row for the item and add it to the table
-            var row = document.createElement("tr");
-            row.innerHTML = `
-                <td style="vertical-align: middle;"><img src="${data.image}" style="width:25%;" class="figure-img img-fluid rounded" style="object-fit: fill;"></td>
-                <td style="vertical-align: middle;"><a href="${ shortened_url }" target="_blank">${ data.title }</a></td>
-                <td style="vertical-align: middle;">$${data.price}</td>
-                <td style="vertical-align: middle;">${data.rating}/5.0</td>
-                <td style="vertical-align: middle;"><button class="btn btn-primary btn-md report-button" data-url="${shortened_url}">Report</button></td>
-            `;
-            document.getElementById("result-table").appendChild(row);
-        }
-        
-        // Add event listener to report button
-        var reportButtons = document.getElementsByClassName("report-button");
-        for (var i = 0; i < reportButtons.length; i++) {
-            reportButtons[i].addEventListener("click", function() {
-                var url = this.getAttribute("data-url");
-                document.getElementById("id_url").value = url;
-                document.querySelector('form').submit();
-            });
-        }
-    </script>
+    <script src="{% static 'clearLocalStorage.js' %}"></script>
+    <script src="{% static 'imageResult.js' %}"></script>
 {% endblock content %}

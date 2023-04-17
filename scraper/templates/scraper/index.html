@@ -17,28 +17,44 @@
                     <div class="input-group">
                         {{ form }}
                         <div class="btn-group">
-                            <button class="btn btn-secondary" style="border-radius: 0;" type="submit">Calculate</button>
-                            <button class="btn btn-secondary" type="button" value="Reset" id="resetBtn" onClick="this.form.reset()">Clear</button>
+                            <button class="btn btn-secondary" style="border-radius: 0;" type="submit">
+                                <i class="fas fa-search"></i> Analyze
+                            </button>
+                            <button class="btn btn-secondary" type="button" value="Reset" id="closeAlertBtn" onClick="this.form.reset()">
+                                <i class="fas fa-trash-alt"></i> Clear
+                            </button>
                         </div>
                         <div id="urlValidFeedback" class="valid-feedback">Success! You've entered a valid URL.</div>
                         <div id="urlInvalidFeedback" class="invalid-feedback">Sorry, that URL is invalid. Try another?</div>
                     </div>
                 </form>
                 <div class="mt-5">
-                    <h3 class="text-center" style="margin-top: 80px;">
-                        <i class="fas fa-trash-alt" id="clearResultsBtn" style="cursor: pointer;"></i> Search Results
-                    </h3>
-                    <table class="table table-striped mx-auto">
+                    <h3 class="text-center" style="margin-top: 80px;">Search Results</h3>
+                    <div class="input-group mt-3 mx-auto" style="max-width: 50%;">
+                        <input type="text" class="form-control" id="searchBar" placeholder="Filter by keyword...">
+                        <div class="input-group-append">
+                            <div class="btn-group">
+                                <button class="btn btn-secondary" style="border-radius: 0;" id="filterBtn" type="submit">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                <button class="btn btn-secondary" type="button" value="Reset" id="clearResultsBtn">
+                                    <i class="fas fa-trash-alt"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="table table-striped mx-auto" id="result-table" style="display: none;">
                         <thead>
                             <tr>
                                 <th></th>
-                                    <th>Item</th>
-                                    <th>Price</th>
-                                    <th>Rating</th>   
+                                <th>Item</th>
+                                <th>Price</th>
+                                <th>Rating</th>   
                             </tr>
                         </thead>
-                        <tbody id="result-table"></tbody>
+                        <tbody id="result-table-body"></tbody>
                     </table>
+                    <p id="noItemsMsg" class="text-center mt-3" style="display: none;">No items to display! 😭</p>
                 </div>
             </div>
         </div>
@@ -46,4 +62,7 @@
 
     <script src="{% static 'clearLocalStorage.js' %}"></script>
     <script src="{% static 'imageResult.js' %}"></script>
+    <script src="{% static 'isValidUrl.js' %}"></script>
+    <script src="{% static 'filterSearchResults.js' %}"></script>
+    <script src="{% static 'isLocalStorageEmpty.js' %}"></script>
 {% endblock content %}

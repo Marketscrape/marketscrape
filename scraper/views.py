@@ -4,7 +4,9 @@ from .forms import MarketForm
 from .utils import *
 from .scraper_class import FacebookScraper
 import re
-import statistics
+import plotly.express as px
+import pandas as pd
+import numpy as np
 
 class Index(View):
     def get(self, request):
@@ -38,10 +40,29 @@ class Index(View):
             list_price = re.sub("[\$,]", "", list_price)
             initial_price = int(re.sub("[\$,]", "", list_price))
 
-            lower_bound, upper_bound, median = find_viable_product(title, ramp_down=0.0)
+            similar_descriptions, similar_prices = find_viable_product(title, ramp_down=0.0)
+            similar_prices = [float(price.replace(',', '')) for price in similar_prices]
+            shortened_item_names = [description[:10] + '...' if len(description) > 10 else description for description in similar_descriptions]
+
+            # Create a DataFrame from the data
+            data = {'Product': shortened_item_names, 'Price': similar_prices, 'Description': similar_descriptions}
+            df = pd.DataFrame(data)
+
+            cmin = min(similar_prices)
+            cmax = max(similar_prices)
+
+            # Ratio 
+            desired_diameter = 150
+            sizeref = cmax / desired_diameter
+
+            fig = px.scatter(df, x='Product', text='Description', y='Price', size='Price', color='Price', color_continuous_scale='RdYlGn_r', range_color=[cmin, cmax])
+            fig.update_traces(mode='markers', marker=dict(symbol='circle', sizemode='diameter', sizeref=sizeref))
+
+            chart = fig.to_json()           
+
+            # Needs to be redone
+            median = np.median(similar_prices)
             price_rating = price_difference_rating(initial_price, median)
-            average_rating = statistics.mean([sentiment_rating, price_rating])
-            average_rating = round(average_rating, 1)
 
             context = {
                 'shortened_url': shortened_url,
@@ -51,11 +72,8 @@ class Index(View):
                 'title': title,
                 'list_price': "{0:,.2f}".format(float(list_price)),
                 'initial_price': initial_price,
-                'lower_bound': "{0:,.2f}".format(lower_bound),
-                'upper_bound': "{0:,.2f}".format(upper_bound),
-                'median': "{0:,.2f}".format(median),
+                'chart': chart,
                 'price_rating': round(price_rating, 1),
-                'average_rating': average_rating,
                 'days': listing_days,
                 'hours': listing_hours,
                 'image': listing_image[0],

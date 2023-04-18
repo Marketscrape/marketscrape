@@ -206,17 +206,18 @@ def find_viable_product(title: str, ramp_down: float) -> tuple[float, float, flo
 
     try:
         filtered_prices_descriptions = listing_product_similarity(soup, cleaned_title, similarity_threshold)
-        prices = list(filtered_prices_descriptions.values())
-        assert len(prices) > 0
+        assert len(filtered_prices_descriptions) > 0
     except AssertionError:
-        while len(prices) == 0:
+        while len(filtered_prices_descriptions) == 0:
             ramp_down += 0.05
             filtered_prices_descriptions = listing_product_similarity(soup, cleaned_title, similarity_threshold - ramp_down)
-            prices = list(filtered_prices_descriptions.values())
 
-    median = statistics.median_grouped(prices)
+    descriptions = list(filtered_prices_descriptions.keys())
+
+    prices = list(filtered_prices_descriptions.values())
+    prices = ["{0:,.2f}".format(price) for price in prices]
     
-    return min(prices), max(prices), median
+    return descriptions, prices
 
 def listing_product_similarity(soup: BeautifulSoup, title: str, similarity_threshold: float) -> dict:
     """

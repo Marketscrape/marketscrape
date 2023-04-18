@@ -1,59 +1,35 @@
 {% extends 'scraper/base.html' %}
+{% load static %}
 
 {% block content %}
-<script>
-  var item = {
-      image: "{{ image }}",
-      title: "{{ title }}",
-      rating: "{{ average_rating }}",
-      price: "{{ list_price }}"
-  };
-  var shortened_url = "{{ shortened_url }}";
-  console.log("shortened_url:", shortened_url);
-  localStorage.setItem(shortened_url, JSON.stringify(item));
-  console.log(localStorage.getItem(shortened_url));
-</script>
+    <!-- This script can't be extracted to it's own JavaScript file -->
+    <script>
+        var item = {
+            image: "{{ image }}",
+            title: "{{ title }}",
+            rating: "{{ price_rating }}",
+            price: "{{ list_price }}"
+        };
+        var shortened_url = "{{ shortened_url }}";
+        localStorage.setItem(shortened_url, JSON.stringify(item));
+    </script>
 
-<a href="{% url 'index' %}" class="btn btn-outline-primary mt-3 mx-3"><i class="fas fa-chevron-left"></i> Go Back</a>
-<div class="container">
-    <h1 class="text-center mb-4">Marketscrape Analysis Report</h1>
-    <div class="row">
-        <div class="col-12 col-md-6 mx-auto">
-            <div class="row">
-                <div class="col-md-6 mx-auto">
-                    <figure class="figure">
-                      <img src=" {{ image }}" class="figure-img img-fluid rounded" style="object-fit: fill;">
-                      <figcaption class="figure-caption"><code>{{ title }}</code> was listed <code>{{ days }} days</code> and <code>{{ hours }} hours</code> ago, for <code>${{ list_price }}</code>.</figcaption>
-                    </figure>
-                    <div class="table-responsive">
-                      <table class="table table-striped">
-                        <tbody>
-                          <tr>
-                            <td>Range:</td>
-                            <td>${{ lower_bound }} - ${{ upper_bound }}</td>
-                          </tr>
-                          <tr>
-                            <td>Median:</td>
-                            <td>${{ median }}</td>
-                          </tr>
-                          <tr>
-                            <td>Description:</td>
-                            <td>{{ sentiment_rating }}/5.0</td>
-                          </tr>
-                          <tr>
-                            <td>Price:</td>
-                            <td>{{ price_rating }}/5.0</td>
-                          </tr>
-                          <tr>
-                            <td>Overall:</td>
-                            <td>{{ average_rating }}/5.0</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                </div>
+    <a href="{% url 'index' %}" class="btn btn-outline-secondary mt-3 mx-3"><i class="fas fa-chevron-left"></i> Go Back</a>
+    <div class="container md mt-5">
+        <h1 class="text-center mb-4">Analysis Report</h1>
+        <p class="text-center lead">
+            Dynamic reports delivering <span class="gradient-text">invaluable</span> insights, 
+            <span class="gradient-text">powerful</span> data analytics, 
+            and <span class="gradient-text">captivating</span> visualizations
+        </p>
+        <div class="card" style="margin-top: 5rem;">
+            <div class="card-body">
+                <h5 class="card-title">{{ title }} <span><i class="fas fa-info-circle" id="infoBtn"></i></span></h5>
+                <h6 class="card-subtitle mb-2 text-muted">Listed {{ days }} days and {{ hours }} hours ago, for ${{ list_price }}</h6>
+                <div id="chart" data-chart="{{ chart }}"></div>
             </div>
         </div>
     </div>
-</div>
+
+    <script src="{% static 'plotSimilarResults.js' %}"></script>
 {% endblock content %}

@@ -1,0 +1,37 @@
+{% load static %}
+
+{% block result_table %}
+    <div class="mt-5">
+        <h3 class="text-center" style="margin-top: 5rem;">Search Results</h3>
+        <div class="input-group mt-3 mx-auto" style="max-width: 50%;">
+            <input type="text" class="form-control" id="searchBar" onkeyup="filterTable()" placeholder="Filter by keyword...">
+            <div class="input-group-append">
+                <div class="btn-group">
+                    <button class="btn btn-secondary" type="button" value="Reset" id="clearResultsBtn">
+                        <i class="fas fa-trash-alt"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+        <br>
+        <table class="table table-hover mx-auto">
+            <thead>
+                <tr class="clickable-row">
+                    <th></th>
+                    <th>Item</th>
+                    <th>Price</th>
+                    <th>Rating</th>   
+                </tr>
+            </thead>
+            <tbody id="result-table"></tbody>
+        </table>
+        <div id="emptyMessage" class="text-center" style="display: none;">
+            <p>No results yet! Let's uncover some hidden treasures! 💎🔍</p>
+        </div>
+    </div>
+
+    <script src="{% static 'clearLocalStorage.js' %}"></script>
+    <script src="{% static 'rowResult.js' %}"></script>
+    <script src="{% static 'filterSearchResults.js' %}"></script>
+    <script src="{% static 'displayEmptyMessage.js' %}"></script>
+{% endblock result_table %}

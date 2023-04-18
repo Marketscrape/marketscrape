@@ -1,5 +1,6 @@
-document.getElementById('filterBtn').addEventListener('click', function() {
+function filterTable() {
     var input = document.getElementById('searchBar').value.toLowerCase();
+    console.log(input);
     var table  = document.getElementById('result-table');
     var rows = table.getElementsByTagName('tr');
 
@@ -16,4 +17,4 @@ document.getElementById('filterBtn').addEventListener('click', function() {
             }
         }
     }
-});
+}

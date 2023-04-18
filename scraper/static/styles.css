@@ -11,7 +11,38 @@
 
 }
 
+#clearResultsBtn {
+    /* Inner values correspond to left edge, middle-values correspond to right edge */
+    border-radius: 0 0.375rem 0.375rem 0;
+}
+
 #closeAlertBtn:hover {
     /* Use Bootswatch is-invalid color */
     color: #dc3545;
+}
+
+.clickable-row {
+    cursor: pointer;
+}
+
+/* Adapted from: https://css-tricks.com/five-methods-for-five-star-ratings/ */
+:root {
+    --star-size: 1.5rem;
+    --star-color: #fff;
+    --star-background: #fc0;
+}
+.Stars {
+    --percent: calc(var(--rating) / 5 * 100%);
+    display: inline-block;
+    font-size: var(--star-size);
+    font-family: Times;
+    line-height: 1;
+}
+.Stars::before {
+    content: '★★★★★';
+    letter-spacing: 3px;
+    background: linear-gradient(90deg, var(--star-background) var(--percent), var(--star-color) var(--percent));
+    -webkit-background-clip: text;
+            background-clip: text;
+    -webkit-text-fill-color: transparent;
 }

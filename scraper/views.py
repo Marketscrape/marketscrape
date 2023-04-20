@@ -51,6 +51,11 @@ class Index(View):
             cmin = min(similar_prices)
             cmax = max(similar_prices)
 
+            idx = similar_prices.index(cmin)
+            best_similar_price = f"{similar_prices[idx]:,}"
+            best_similar_description = similar_descriptions[idx]
+            best_similar_category = shortened_item_names[idx]
+
             # Ratio 
             desired_diameter = 150
             sizeref = cmax / desired_diameter
@@ -61,8 +66,9 @@ class Index(View):
             chart = fig.to_json()           
 
             # Needs to be redone
-            median = np.median(similar_prices)
-            price_rating = price_difference_rating(initial_price, median)
+            price_rating = price_difference_rating(initial_price, cmin)
+
+            categories = list(set(shortened_item_names))
 
             context = {
                 'shortened_url': shortened_url,
@@ -77,6 +83,10 @@ class Index(View):
                 'days': listing_days,
                 'hours': listing_hours,
                 'image': listing_image[0],
+                'categories': categories,
+                'best_similar_price': best_similar_price,
+                'best_similar_description': best_similar_description,
+                'best_similar_category': best_similar_category,
                 'id': market_id
             }
 

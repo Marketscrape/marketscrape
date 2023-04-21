@@ -6,7 +6,6 @@ from .scraper_class import FacebookScraper
 import re
 import plotly.express as px
 import pandas as pd
-import numpy as np
 
 class Index(View):
     def get(self, request):
@@ -40,21 +39,22 @@ class Index(View):
             list_price = re.sub("[\$,]", "", list_price)
             initial_price = int(re.sub("[\$,]", "", list_price))
 
-            similar_descriptions, similar_prices = find_viable_product(title, ramp_down=0.0)
+            similar_descriptions, similar_prices, similar_urls = find_viable_product(title, ramp_down=0.0)
             similar_prices = [float(price.replace(',', '')) for price in similar_prices]
             shortened_item_names = [description[:10] + '...' if len(description) > 10 else description for description in similar_descriptions]
 
             # Create a DataFrame from the data
-            data = {'Product': shortened_item_names, 'Price': similar_prices, 'Description': similar_descriptions}
+            data = {'Product': shortened_item_names, 'Price': similar_prices, 'Description': similar_descriptions, 'URL': similar_urls}
             df = pd.DataFrame(data)
 
             cmin = min(similar_prices)
             cmax = max(similar_prices)
 
             idx = similar_prices.index(cmin)
-            best_similar_price = f"{similar_prices[idx]:,}"
+            best_similar_price = f"{similar_prices[idx]:,.2f}"
             best_similar_description = similar_descriptions[idx]
             best_similar_category = shortened_item_names[idx]
+            best_similar_url = similar_urls[idx]
 
             # Ratio 
             desired_diameter = 150
@@ -79,7 +79,7 @@ class Index(View):
                 'market_id': market_id,
                 'sentiment_rating': round(sentiment_rating, 1),
                 'title': title,
-                'list_price': "{0:,.2f}".format(float(list_price)),
+                'list_price': f"{float(list_price):,.2f}",
                 'initial_price': initial_price,
                 'chart': chart,
                 'price_rating': round(price_rating, 1),
@@ -90,6 +90,7 @@ class Index(View):
                 'best_similar_price': best_similar_price,
                 'best_similar_description': best_similar_description,
                 'best_similar_category': best_similar_category,
+                'best_similar_url': best_similar_url,
                 'list_best_context': list_best_context,
                 'id': market_id
             }

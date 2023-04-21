@@ -5,7 +5,6 @@ from nltk.stem import WordNetLemmatizer
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 import numpy as np
-import statistics
 import requests
 import re
 
@@ -74,6 +73,26 @@ def get_product_description(soup: BeautifulSoup) -> str:
     description = soup.find_all("div", {"class": "rgHvZc"})
 
     return description
+
+def get_product_url(soup: BeautifulSoup) -> str:
+    """
+    Returns the product URL in the soup.
+
+    Args:
+        soup: a BeautifulSoup object containing a product page
+
+    Returns:
+        The product URL
+    """
+    urls = soup.find_all("div", {"class": "rgHvZc"})
+
+    values = []
+    for url in urls:
+        link = url.find('a', href=True)
+        result = link['href'].replace('/url?url=', '')
+        values.append(result)
+
+    return values
 
 def get_product_price(soup: BeautifulSoup) -> np.ndarray:
     """
@@ -185,7 +204,7 @@ def find_viable_product(title: str, ramp_down: float) -> tuple[float, float, flo
     """
     Finds viable products based on the title of the Marketplace listing,
     and utilizes the ramp down of the previous product in the sequence, to 
-    find the minimum, maximum, and median of the prices of the product.
+    find the descriptions, prices, and urls of the prices of the product.
 
     Args:
         title: The title of the product.
@@ -193,7 +212,7 @@ def find_viable_product(title: str, ramp_down: float) -> tuple[float, float, flo
             sequence.
 
     Returns:
-        The minimum, maximum, and median of the prices of the product.
+        The descriptions, prices and urls the viable products.
     """
     cleaned_title = clean_listing_title(title)
     headers = { 
@@ -215,9 +234,11 @@ def find_viable_product(title: str, ramp_down: float) -> tuple[float, float, flo
     descriptions = list(filtered_prices_descriptions.keys())
 
     prices = list(filtered_prices_descriptions.values())
-    prices = ["{0:,.2f}".format(price) for price in prices]
+    prices = [f"{price['price']:,.2f}" for price in prices]
+
+    urls = [price['url'] for price in filtered_prices_descriptions.values()]
     
-    return descriptions, prices
+    return descriptions, prices, urls
 
 def listing_product_similarity(soup: BeautifulSoup, title: str, similarity_threshold: float) -> dict:
     """
@@ -233,19 +254,21 @@ def listing_product_similarity(soup: BeautifulSoup, title: str, similarity_thres
     """
     normalized = get_product_price(soup)
     description = get_product_description(soup)
+    url = get_product_url(soup)
 
     price_description = {}
-    for key, value in zip(description, normalized):
+    for key, value, product_url in zip(description, normalized, url):
         google_shopping_title = clean_title_description(key.text.lower())
         listing_title = clean_title_description(title.lower())
-        price_description[key.text] = [value, SequenceMatcher(None, google_shopping_title, listing_title).ratio()]
+        price_description[key.text] = {'price': value, 'similarity': SequenceMatcher(None, google_shopping_title, listing_title).ratio(), 'url': product_url}
 
     filtered_prices_descriptions = {}
     for key, value in price_description.items():
-        if value[1] >= similarity_threshold:
-            filtered_prices_descriptions[key] = value[0]
+        if value['similarity'] >= similarity_threshold:
+            filtered_prices_descriptions[key] = {'price': value['price'], 'url': value['url']}
 
     return filtered_prices_descriptions
+
 
 def percentage_difference(list_price: float, best_price: float) -> dict:
     """

@@ -6,10 +6,10 @@ for (var i = localStorage.length - 1; i >= 0; i--) {
     // Create a row for the item and add it to the table
     var row = document.createElement("tr");
     row.innerHTML = `
-        <td style="vertical-align: middle; horizontal-align: middle;"><img src="${data.image}" style="width:50%;" class="figure-img img-fluid rounded clickable-row" style="object-fit: fill;" data-url="${ shortened_url }" onClick="rowReport(this)"></td>
-        <td style="vertical-align: middle;" class="clickable-row" data-url="${ shortened_url }" onClick="rowReport(this)">${ data.title }</td>
-        <td style="vertical-align: middle;" class="clickable-row" data-url="${ shortened_url }" onClick="rowReport(this)">$${ data.price }</td>
-        <td style="vertical-align: middle;" class="clickable-row" data-url="${ shortened_url }" onClick="rowReport(this)">
+        <td style="vertical-align: middle; horizontal-align: middle;"><img src="${data.image}" style="width:50%;" class="figure-img img-fluid rounded clickable" style="object-fit: fill;" data-url="${ shortened_url }" onClick="rowReport(this)"></td>
+        <td style="vertical-align: middle;" class="clickable" data-url="${ shortened_url }" onClick="rowReport(this)">${ data.title }</td>
+        <td style="vertical-align: middle;" class="clickable" data-url="${ shortened_url }" onClick="rowReport(this)">$${ data.price }</td>
+        <td style="vertical-align: middle;" class="clickable" data-url="${ shortened_url }" onClick="rowReport(this)">
             <div class="Stars" style="--rating: ${ data.rating }" aria-label="Rating of this product is ${ data.rating } out of 5."></div>
         </td>
     `;

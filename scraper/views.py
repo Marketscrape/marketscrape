@@ -65,6 +65,9 @@ class Index(View):
 
             chart = fig.to_json()           
 
+            # Percetage difference between the listing price and the best found price
+            list_best_context = percentage_difference(float(list_price), float(best_similar_price))
+
             # Needs to be redone
             price_rating = price_difference_rating(initial_price, cmin)
 
@@ -87,6 +90,7 @@ class Index(View):
                 'best_similar_price': best_similar_price,
                 'best_similar_description': best_similar_description,
                 'best_similar_category': best_similar_category,
+                'list_best_context': list_best_context,
                 'id': market_id
             }
 

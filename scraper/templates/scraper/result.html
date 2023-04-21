@@ -14,10 +14,6 @@
         localStorage.setItem(shortened_url, JSON.stringify(item));
     </script>
 
-    <div class="alert alert-info alert-dismissible" id="infoAlert" style="display:none;">
-        <span aria-hidden="true"><i class="fas fa-solid fa-times" id="closeAlertBtn" style="cursor: pointer;"></i></span> A larger-sized bubble corresponds to a higher price and, subsequently, a redder colour! The opposite is also true; in summary, remember this little visual: 🔴❌ and 🟢✔️! 
-    </div>
-
     <a href="{% url 'index' %}" class="btn btn-outline-secondary mt-3 mx-3"><i class="fas fa-chevron-left"></i> Go Back</a>
     <div class="container md mt-5">
         <h1 class="text-center mb-4">Analysis Report</h1>
@@ -28,7 +24,12 @@
         </p>
         <div class="card" style="margin-top: 5rem;">
             <div class="card-body">
-                <h5 class="card-title">{{ title }} <span class="clickable"><i class="fas fa-info-circle" id="infoBtn"></i></span></h5>
+                <h5 class="card-title">{{ title }} <span class="clickable" data-toggle="collapse" data-target="#infoCollapse"><i class="fas fa-info-circle" id="infoBtn"></i></span></h5>
+                <div class="collapse" style="margin-bottom: 1rem;" id="infoCollapse">
+                    Your bubble chart shows the prices of different product categories using colourful bubbles, where the size and height of the bubbles indicate the price of 
+                    the product. The bubbles are colour-coded to show the most and least expensive categories, and you can hover over each bubble to get additional information.
+                    It's an easy and playful way to explore your data!
+                </div>
                 <h6 class="card-subtitle mb-2 text-muted">Listed {{ days }} days and {{ hours }} hours ago, for ${{ list_price }}</h6>
                 <div id="chart" data-chart="{{ chart }}"></div>
                 <p>
@@ -38,12 +39,16 @@
 
                 <p>
                     We found that the best deal occured in the <span style="color:#28a745">{{ best_similar_category }}</span> category 
-                    with a price of <span style="color:#28a745">${{ best_similar_price }}</span> for the <span style="color:#28a745">{{ best_similar_description }}</span>!
+                    with a price of <span style="color:#28a745">${{ best_similar_price }}</span> for the <span style="color:#28a745">{{ best_similar_description }}</span> product, 
+                    {% if list_best_context.type == "decrease" %}
+                        which is a <span style="color:#dc3545">{{ list_best_context.type }}</span> of <span style="color:#dc3545">{{ list_best_context.amount }}%</span>!
+                    {% else %}
+                        which is an <span style="color:#28a745">{{ list_best_context.type }}</span> of <span style="color:#28a745">{{ list_best_context.amount }}%</span>!
+                    {% endif %}
                 </p>
             </div>
         </div>
     </div>
 
-    <script src="{% static 'infoButtonAlert.js' %}"></script>
     <script src="{% static 'plotSimilarResults.js' %}"></script>
 {% endblock content %}

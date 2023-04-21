@@ -39,7 +39,7 @@
 
                 <p>
                     We found that the best deal occured in the <span style="color:#28a745">{{ best_similar_category }}</span> category 
-                    with a price of <span style="color:#28a745">${{ best_similar_price }}</span> for the <span style="color:#28a745">{{ best_similar_description }}</span> product, 
+                    with a price of <span style="color:#28a745">${{ best_similar_price }}</span> for the <a style="color:#28a745" href="{{ best_similar_url }}" target="_blank">{{ best_similar_description }}</a> product, 
                     {% if list_best_context.type == "decrease" %}
                         which is a <span style="color:#dc3545">{{ list_best_context.type }}</span> of <span style="color:#dc3545">{{ list_best_context.amount }}%</span>!
                     {% else %}

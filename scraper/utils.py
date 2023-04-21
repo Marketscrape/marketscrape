@@ -246,3 +246,32 @@ def listing_product_similarity(soup: BeautifulSoup, title: str, similarity_thres
             filtered_prices_descriptions[key] = value[0]
 
     return filtered_prices_descriptions
+
+def percentage_difference(list_price: float, best_price: float) -> dict:
+    """
+    Returns a dictionary of both the percentage difference between the listing price and the best
+    found price via Google Shopping, and whether or not the difference is categorized as being an
+    increase or decrease.
+
+    Args:
+        list_price (float): The listing price.
+        best_price (float): The best found price.
+    
+    Returns:
+        dict: A dictionary mapping the percentage difference amount to the difference type.
+    """
+    difference = {
+        "amount": -1,
+        "type": "NaN"
+    }
+
+    if list_price > best_price:
+        percentage = (np.abs(list_price - best_price) / list_price) * 100
+        difference["amount"] = f"{percentage:.2f}"
+        difference["type"] = "decrease"
+    else:
+        percentage = (np.abs(best_price - list_price) / best_price) * 100
+        difference["amount"] = f"{percentage:.2f}"
+        difference["type"] = "increase"
+
+    return difference

@@ -7,7 +7,7 @@
             <input type="text" class="form-control" id="searchBar" onkeyup="filterTable()" placeholder="Filter by keyword...">
             <div class="input-group-append">
                 <div class="btn-group">
-                    <button class="btn btn-secondary" type="button" value="Reset" id="clearResultsBtn">
+                    <button class="btn btn-secondary" type="button" value="Reset" id="clearResultsBtn" onClick="clearTable()">
                         <i class="fas fa-trash-alt"></i> Clear
                     </button>
                 </div>
@@ -33,6 +33,7 @@
     <script src="{% static 'clearLocalStorage.js' %}"></script>
     <script src="{% static 'rowResult.js' %}"></script>
     <script src="{% static 'filterSearchResults.js' %}"></script>
+    <script src="{% static 'displayEmptyMessage.js' %}"></script>
     <script src="{% static 'displayEmptyMessage.js' %}"></script>
     <script src="{% static 'hideTable.js' %}"></script>
 {% endblock result_table %}

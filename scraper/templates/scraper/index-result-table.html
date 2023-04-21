@@ -25,7 +25,7 @@
             </thead>
             <tbody id="result-table"></tbody>
         </table>
-        <div id="emptyMessage" class="text-center" style="display: none;">
+        <div id="emptyMessage" class="text-center" style="display: none; margin-top: -4rem;">
             <p>No results yet! Let's uncover some hidden treasures! 💎🔍</p>
         </div>
     </div>
@@ -34,10 +34,5 @@
     <script src="{% static 'rowResult.js' %}"></script>
     <script src="{% static 'filterSearchResults.js' %}"></script>
     <script src="{% static 'displayEmptyMessage.js' %}"></script>
-    <script>
-        // Hide the table header if there are no search results
-        if (document.getElementById('result-table').innerHTML.trim() === '') {
-            document.getElementById('table-header').style.display = 'none';
-        }
-    </script>
+    <script src="{% static 'hideTable.js' %}"></script>
 {% endblock result_table %}

@@ -15,7 +15,7 @@
         </div>
         <br>
         <table class="table table-hover mx-auto">
-            <thead>
+            <thead id="table-header">
                 <tr class="clickable">
                     <th></th>
                     <th>Item</th>
@@ -34,4 +34,10 @@
     <script src="{% static 'rowResult.js' %}"></script>
     <script src="{% static 'filterSearchResults.js' %}"></script>
     <script src="{% static 'displayEmptyMessage.js' %}"></script>
+    <script>
+        // Hide the table header if there are no search results
+        if (document.getElementById('result-table').innerHTML.trim() === '') {
+            document.getElementById('table-header').style.display = 'none';
+        }
+    </script>
 {% endblock result_table %}

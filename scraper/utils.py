@@ -1,34 +1,8 @@
-from nltk.corpus import stopwords
-from nltk.sentiment import SentimentIntensityAnalyzer
-from nltk.tokenize import RegexpTokenizer
-from nltk.stem import WordNetLemmatizer
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 import numpy as np
 import requests
 import re
-
-def clean_text(text: str) -> str:
-    """
-    Cleans a string of text by removing punctuation and extra whitespace.
-
-    Args:
-        text: The string of text to clean.
-
-    Returns:
-        The cleaned string of text.
-    """
-    tokenizer = RegexpTokenizer('\w+|\$[\d\.]+|http\S+')
-    tokenized = tokenizer.tokenize(text)
-    tokenized = [word.lower() for word in tokenized]
-
-    stop_words = stopwords.words('english')
-    filtered = [word for word in tokenized if word not in stop_words and word.isalpha()]
-
-    lemmatizer = WordNetLemmatizer()
-    lemmatized = [lemmatizer.lemmatize(word) for word in filtered]
-    
-    return " ".join(lemmatized)
 
 def clean_listing_title(title: str) -> str:
     """
@@ -118,28 +92,6 @@ def get_product_price(soup: BeautifulSoup) -> np.ndarray:
     outlierless = reject_outliers(np.array(normalized))
 
     return outlierless
-
-def sentiment_analysis(text: str) -> float:
-    """
-    Returns the sentiment score of the text, with higher values indicating a more positive sentiment.
-
-    Args:
-        text (str): The text to analyze.
-    Returns:
-        float: The sentiment score, with higher values indicating a more positive sentiment.
-    """
-    sia = SentimentIntensityAnalyzer()
-    sentiment = sia.polarity_scores(text)
-    neg, neu, pos, compound = sentiment["neg"], sentiment["neu"], sentiment["pos"], sentiment["compound"]
-
-    if compound > 0.0:
-        rating = 5 * max(pos, compound)
-    elif compound < 0.0:
-        rating = 5 * min(neg, compound)
-    else:
-        rating = 5 * neu
-
-    return abs(rating)
 
 def create_soup(url: str, headers: dict) -> BeautifulSoup:
     """

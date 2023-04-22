@@ -34,8 +34,6 @@ class Index(View):
             title = scraper_instance.get_listing_title()
             list_price = scraper_instance.get_listing_price()
 
-            sentiment_rating = sentiment_analysis(listing_description)
-
             list_price = re.sub("[\$,]", "", list_price)
             initial_price = int(re.sub("[\$,]", "", list_price))
 
@@ -77,7 +75,6 @@ class Index(View):
                 'shortened_url': shortened_url,
                 'mobile_url': mobile_url,
                 'market_id': market_id,
-                'sentiment_rating': round(sentiment_rating, 1),
                 'title': title,
                 'list_price': f"{float(list_price):,.2f}",
                 'initial_price': initial_price,

@@ -68,7 +68,7 @@ class FacebookScraper:
         description = self.base_soup.find("meta", {"name": "DC.description"})
         description_content = description["content"]
 
-        return clean_text(description_content)
+        return description_content
 
     def is_listing_missing(self) -> bool:
         title_element = self.mobile_soup.find("title")

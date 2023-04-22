@@ -1,5 +1,6 @@
 import datetime
 import re
+import json
 from .utils import *
 
 class FacebookScraper:
@@ -7,28 +8,64 @@ class FacebookScraper:
         self.mobile_soup = mobile_soup
         self.base_soup = base_soup
 
-    def get_listing_price(self) -> str:
-        spans = self.mobile_soup.find_all("span")
+        script_tag = self.base_soup.find_all("script", {"type": "application/ld+json"})
+        json_content = {}
 
-        free = [span.text for span in spans if "free" in span.text.lower()]
-        if (free):
-            return free
+        for script in script_tag:
+            script_content=  script.string
+            try:
+                parsed_content = json.loads(script_content)
+                json_content.update(parsed_content)
+            except json.decoder.JSONDecodeError:
+                pass
+        
+        self.json_content = json_content
 
-        price = [str(span.text) for span in spans if "$" in span.text][0]
+    def get_listing_price(self) -> float:
 
-        return price
+        return self.json_content["offers"]["price"]
+
+    def get_listing_title(self) -> str:
+
+        return self.json_content["name"]
     
-    def get_listing_image(self) -> list[str]:
+    def get_listing_description(self) -> str:
+
+        return self.json_content['description']
+    
+    def get_listing_city(self) -> str:
+
+        return self.json_content["itemListElement"][1]["name"]
+    
+    def get_listing_condition(self) -> str:
+        # Item condition distribution based off of Mercari's dataset
+        item_conditions = {
+            "New": 43.21,
+            "Used - Like New": 29.15,
+            "Used - Good": 25.33,
+            "Used - Fair": 2.16,
+            "Refurbished": 0.15
+        }
+
+        schema = self.json_content["itemCondition"]
+        if schema!= None and schema.replace("https://schema.org/", "") == "NewCondition":
+            return "New"
+        else:
+            while True:
+                condition = np.random.choice(list(item_conditions.keys()), p=[v/100 for v in item_conditions.values()])
+                if condition != "New":
+                    break
+            return condition
+
+    def get_listing_category(self) -> str:
+
+        return self.json_content["itemListElement"][2]["name"]
+    
+    def get_listing_image(self) -> str:
         images = self.mobile_soup.find_all("img")
         image = [image["src"] for image in images if "https://scontent" in image["src"]]
 
-        return image
-
-    def get_listing_title(self) -> str:
-        title = self.base_soup.find("meta", {"name": "DC.title"})
-        title_content = title["content"]
-
-        return title_content
+        return image[0]
     
     def get_listing_date(self) -> tuple[int, int]:
         tag = self.mobile_soup.find('abbr')
@@ -63,12 +100,6 @@ class FacebookScraper:
         hours = diff.seconds // 3600
 
         return (days, hours)
-
-    def get_listing_description(self) -> str:
-        description = self.base_soup.find("meta", {"name": "DC.description"})
-        description_content = description["content"]
-
-        return description_content
 
     def is_listing_missing(self) -> bool:
         title_element = self.mobile_soup.find("title")

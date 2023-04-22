@@ -8,7 +8,7 @@
             image: "{{ image }}",
             title: "{{ title }}",
             rating: "{{ price_rating }}",
-            price: "{{ list_price }}"
+            price: "{{ price }}"
         };
         var shortened_url = "{{ shortened_url }}";
         localStorage.setItem(shortened_url, JSON.stringify(item));
@@ -26,25 +26,48 @@
             <div class="card-body">
                 <h5 class="card-title">{{ title }} <span class="clickable" data-toggle="collapse" data-target="#infoCollapse"><i class="fas fa-info-circle" id="infoBtn"></i></span></h5>
                 <div class="collapse" style="margin-bottom: 1rem;" id="infoCollapse">
-                    Your bubble chart shows the prices of different product categories using colourful bubbles, where the size and height of the bubbles indicate the price of 
-                    the product. The bubbles are colour-coded to show the most and least expensive categories, and you can hover over each bubble to get additional information.
-                    It's an easy and playful way to explore your data!
+                    <ul>
+                        <li>Located in {{ city }} 📍</li>
+                        <li>Condition is {{ condition }}</li>
+                        <li>Listed under {{ category }}</li>
+                    </ul>
                 </div>
-                <h6 class="card-subtitle mb-2 text-muted">Listed {{ days }} days and {{ hours }} hours ago, for ${{ list_price }}</h6>
-                <div id="chart" data-chart="{{ chart }}"></div>
+                
+                <h6 class="card-subtitle mb-2 text-muted">
+                    {% if days > 0 %}
+                        {% if days > 1 %}
+                            Listed {{ days }} days and {{ hours }} hours ago, for ${{ price }}
+                        {% else %}
+                            Listed {{ days }} day and {{ hours }} hours ago, for ${{ price }}
+                        {% endif %}
+                    {% else %}
+                        {% if hours > 1 %}
+                            Listed {{ hours }} hours ago, for ${{ price }}
+                        {% else %}
+                            Listed {{ hours }} hour ago, for ${{ price }}
+                        {% endif %}
+                    {% endif %}
+                </h6>
                 <p>
-                    Given the sheer variety of product names we encountered, we've taken the liberty of grouping our findings into {{ categories|length }} funky and fun categories based on the lengths of the names. 
-                    This nifty approach allowed us to whip up some visually engaging graphics that are sure to tickle your fancy while providing valuable insights.
+                    Given the sheer variety of product names we encountered, we've taken the liberty of grouping our findings into {{ categories|length }} funky and fun categories based 
+                    on the lengths of the names. This nifty approach allowed us to whip up some visually engaging graphics that are sure to tickle your fancy while providing valuable insights.
                 </p>
 
+                <p>
+                    Get ready for some serious fun with our bubble chart! It's like a carnival for your data, with colorful bubbles representing the prices of products in each of the 
+                    {{ categories|length }} categories. The bigger and higher a bubble is, the more expensive the product. But don't worry, we've color-coded the bubbles to help you spot the 
+                    priciest ones – just look for the ones that are redder than a lobster in the sun! And with this playful and intuitive way to explore your data, you'll feel like a kid again!
+                </p>
+                <div id="chart" data-chart="{{ chart }}"></div>
                 <p>
                     We found that the best deal occured in the <span style="color:#28a745">{{ best_similar_category }}</span> category 
                     with a price of <span style="color:#28a745">${{ best_similar_price }}</span> for the <a style="color:#28a745" href="{{ best_similar_url }}" target="_blank">{{ best_similar_description }}</a> product, 
                     {% if list_best_context.type == "decrease" %}
-                        which is a <span style="color:#dc3545">{{ list_best_context.type }}</span> of <span style="color:#dc3545">{{ list_best_context.amount }}%</span>!
+                        which is a <span style="color:#28a745">{{ list_best_context.type }}</span> of <span style="color:#28a745">{{ list_best_context.amount }}%</span>
                     {% else %}
-                        which is an <span style="color:#28a745">{{ list_best_context.type }}</span> of <span style="color:#28a745">{{ list_best_context.amount }}%</span>!
+                        which is an <span style="color:#dc3545">{{ list_best_context.type }}</span> of <span style="color:#dc3545">{{ list_best_context.amount }}%</span>
                     {% endif %}
+                    from the listed item!
                 </p>
             </div>
         </div>

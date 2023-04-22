@@ -19,23 +19,21 @@ class Index(View):
             url = form.cleaned_data['url']
             shortened_url = re.search(r".*[0-9]", url).group(0)
             mobile_url = shortened_url.replace("www", "m")
-            market_id = re.search(r"\/item\/([0-9]*)", url).group(1)
             mobile_soup = create_soup(mobile_url, headers=None)
             base_soup = create_soup(url, headers=None)
             scraper_instance = FacebookScraper(mobile_soup, base_soup)
 
-            is_listing_missing = scraper_instance.is_listing_missing()
-            if is_listing_missing:
+            if scraper_instance.is_listing_missing():
                 return render(request, 'scraper/missing.html')
 
-            listing_image = scraper_instance.get_listing_image()
-            listing_days, listing_hours = scraper_instance.get_listing_date()
-            listing_description = scraper_instance.get_listing_description()
+            image = scraper_instance.get_listing_image()
+            days, hours = scraper_instance.get_listing_date()
+            description = scraper_instance.get_listing_description()
             title = scraper_instance.get_listing_title()
-            list_price = scraper_instance.get_listing_price()
-
-            list_price = re.sub("[\$,]", "", list_price)
-            initial_price = int(re.sub("[\$,]", "", list_price))
+            condition = scraper_instance.get_listing_condition()
+            category = scraper_instance.get_listing_category()
+            price = scraper_instance.get_listing_price()
+            city = scraper_instance.get_listing_city()
 
             similar_descriptions, similar_prices, similar_urls = find_viable_product(title, ramp_down=0.0)
             similar_prices = [float(price.replace(',', '')) for price in similar_prices]
@@ -64,32 +62,33 @@ class Index(View):
             chart = fig.to_json()           
 
             # Percetage difference between the listing price and the best found price
-            list_best_context = percentage_difference(float(list_price), float(best_similar_price))
+            list_best_context = percentage_difference(float(price), float(best_similar_price))
 
             # Needs to be redone
-            price_rating = price_difference_rating(initial_price, cmin)
+            price_rating = price_difference_rating(float(price), float(cmin))
 
             categories = list(set(shortened_item_names))
 
             context = {
                 'shortened_url': shortened_url,
                 'mobile_url': mobile_url,
-                'market_id': market_id,
                 'title': title,
-                'list_price': f"{float(list_price):,.2f}",
-                'initial_price': initial_price,
+                'price': f"{float(price):,.2f}",
                 'chart': chart,
                 'price_rating': round(price_rating, 1),
-                'days': listing_days,
-                'hours': listing_hours,
-                'image': listing_image[0],
+                'days': days,
+                'hours': hours,
+                'image': image,
+                'description': description,
+                'condition': condition,
+                'category': category,
+                'city': city,
                 'categories': categories,
                 'best_similar_price': best_similar_price,
                 'best_similar_description': best_similar_description,
                 'best_similar_category': best_similar_category,
                 'best_similar_url': best_similar_url,
                 'list_best_context': list_best_context,
-                'id': market_id
             }
 
             return render(request, 'scraper/result.html', context)

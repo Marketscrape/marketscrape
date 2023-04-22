@@ -1,5 +1,4 @@
 from nltk.corpus import stopwords
-from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem import WordNetLemmatizer
 from bs4 import BeautifulSoup
@@ -7,6 +6,8 @@ from difflib import SequenceMatcher
 import numpy as np
 import requests
 import re
+from transformers import pipeline
+
 
 def clean_text(text: str) -> str:
     """
@@ -127,19 +128,15 @@ def sentiment_analysis(text: str) -> float:
         text (str): The text to analyze.
     Returns:
         float: The sentiment score, with higher values indicating a more positive sentiment.
-    """
-    sia = SentimentIntensityAnalyzer()
-    sentiment = sia.polarity_scores(text)
-    neg, neu, pos, compound = sentiment["neg"], sentiment["neu"], sentiment["pos"], sentiment["compound"]
-
-    if compound > 0.0:
-        rating = 5 * max(pos, compound)
-    elif compound < 0.0:
-        rating = 5 * min(neg, compound)
+    """    
+    sia = pipeline("sentiment-analysis", model="siebert/sentiment-roberta-large-english")
+    result = sia(text)
+    if (result[0]["label"] == 'NEGATIVE'):
+        score = 1 - result[0]["score"]
     else:
-        rating = 5 * neu
-
-    return abs(rating)
+        score = result[0]["score"]
+    scaled_score = score * 5
+    return scaled_score
 
 def create_soup(url: str, headers: dict) -> BeautifulSoup:
     """

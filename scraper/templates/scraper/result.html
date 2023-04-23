@@ -60,14 +60,13 @@
                 </p>
                 <div id="chart" data-chart="{{ chart }}"></div>
                 <p>
-                    We found that the best deal occured in the <span style="color:#28a745">{{ best_similar_category }}</span> category 
-                    with a price of <span style="color:#28a745">${{ best_similar_price }}</span> for the <a style="color:#28a745" href="{{ best_similar_url }}" target="_blank">{{ best_similar_description }}</a> product, 
+                    Looks like we've found a winner! Our fancy-schmancy algorithm suggests that the <a style="color:#28a745" href="{{ best_similar_url }}" target="_blank">{{ best_similar_description }}</a> product, located in the <span style="color:#28a745">{{ best_similar_category }}</span> category, is the closest match to your list item, with a mind-blowing similarity score of <span style="color:#28a745">{{ best_similar_score }}%</span> and the sweetest price of <span style="color:#28a745">${{ best_similar_price}}</span>.
                     {% if list_best_context.type == "decrease" %}
-                        which is a <span style="color:#28a745">{{ list_best_context.type }}</span> of <span style="color:#28a745">{{ list_best_context.amount }}%</span>
+                        Talk about a bargain! This baby is <span style="color:#28a745">{{ list_best_context.amount }}%</span> cheaper than your original pick!
                     {% else %}
-                        which is an <span style="color:#dc3545">{{ list_best_context.type }}</span> of <span style="color:#dc3545">{{ list_best_context.amount }}%</span>
+                        Oops, looks like this one's <span style="color:#dc3545">{{ list_best_context.amount }}%</span> more expensive than your original choice.
                     {% endif %}
-                    from the listed item!
+                    Anyway, we won't tell your list item that you've found a new love 😉
                 </p>
             </div>
         </div>

@@ -35,24 +35,27 @@ class Index(View):
             price = scraper_instance.get_listing_price()
             city = scraper_instance.get_listing_city()
 
-            similar_descriptions, similar_prices, similar_urls = find_viable_product(title, ramp_down=0.0)
+            similar_descriptions, similar_prices, similar_urls, best_similar_product = find_viable_product(title, ramp_down=0.0)
             similar_prices = [float(price.replace(',', '')) for price in similar_prices]
-            shortened_item_names = [description[:10] + '...' if len(description) > 10 else description for description in similar_descriptions]
+            shortened_item_names = [description[:8] + '...' if len(description) > 10 else description for description in similar_descriptions]
+
+            # Based on the best similar product, get the price, description, category, and URL
+            idx = similar_urls.index(best_similar_product[1]["url"])
+            best_similar_price = f"{similar_prices[idx]:,.2f}"
+            best_similar_description = similar_descriptions[idx]
+            best_similar_category = shortened_item_names[idx]
+            best_similar_url = similar_urls[idx]
+            best_similar_score = best_similar_product[1]["similarity"] * 100
 
             # Create a DataFrame from the data
             data = {'Product': shortened_item_names, 'Price': similar_prices, 'Description': similar_descriptions, 'URL': similar_urls}
             df = pd.DataFrame(data)
 
+            # Used to determine colour range bounds
             cmin = min(similar_prices)
             cmax = max(similar_prices)
 
-            idx = similar_prices.index(cmin)
-            best_similar_price = f"{similar_prices[idx]:,.2f}"
-            best_similar_description = similar_descriptions[idx]
-            best_similar_category = shortened_item_names[idx]
-            best_similar_url = similar_urls[idx]
-
-            # Ratio 
+            # Ratio to limit the total bubble size
             desired_diameter = 150
             sizeref = cmax / desired_diameter
 
@@ -65,7 +68,7 @@ class Index(View):
             list_best_context = percentage_difference(float(price), float(best_similar_price))
 
             # Needs to be redone
-            price_rating = price_difference_rating(float(price), float(cmin))
+            price_rating = price_difference_rating(float(price), float(best_similar_price))
 
             categories = list(set(shortened_item_names))
 
@@ -88,7 +91,8 @@ class Index(View):
                 'best_similar_description': best_similar_description,
                 'best_similar_category': best_similar_category,
                 'best_similar_url': best_similar_url,
-                'list_best_context': list_best_context,
+                'best_similar_score': f"{best_similar_score:.2f}",
+                'list_best_context': list_best_context
             }
 
             return render(request, 'scraper/result.html', context)

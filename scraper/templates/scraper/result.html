@@ -34,18 +34,22 @@
                 </div>
                 
                 <h6 class="card-subtitle mb-2 text-muted">
-                    {% if days > 0 %}
-                        {% if days > 1 %}
-                            Listed {{ days }} days and {{ hours }} hours ago, for ${{ price }}
-                        {% else %}
-                            Listed {{ days }} day and {{ hours }} hours ago, for ${{ price }}
-                        {% endif %}
+                    {% if days == 1 and hours == 1 %}
+                        Listed {{ days }} day and {{ hours }} hour ago, for ${{ price }}
+                    {% elif days == 1 and hours > 1 %}
+                        Listed {{ days }} day and {{ hours }} hours ago, for ${{ price }}
+                    {% elif days > 1 and hours == 1 %}
+                        Listed {{ days }} days and {{ hours }} hour ago, for ${{ price }}
+                    {% elif days == 0 and hours == 1 %}
+                        Listed {{ hours }} hour ago, for ${{ price }}
+                    {% elif days == 0 and hours > 1 %}
+                        Listed {{ hours }} hours ago, for ${{ price }}
+                    {% elif days == 1 and hours == 0 %}
+                        Listed {{ days }} day ago, for ${{ price }}
+                    {% elif days > 1 and hours == 0 %}
+                        Listed {{ days }} days ago, for ${{ price }}
                     {% else %}
-                        {% if hours > 1 %}
-                            Listed {{ hours }} hours ago, for ${{ price }}
-                        {% else %}
-                            Listed {{ hours }} hour ago, for ${{ price }}
-                        {% endif %}
+                        Listed {{ days }} days and {{ hours }} hours ago, for ${{ price }}
                     {% endif %}
                 </h6>
                 <p>

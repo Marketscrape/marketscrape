@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 import numpy as np
 import requests
+import string
 import re
 
 def clean_listing_title(title: str) -> str:
@@ -14,6 +15,7 @@ def clean_listing_title(title: str) -> str:
     Returns:
         The cleaned listing title.
     """
+
     title = re.sub(r"#", "%2", title)
     title = re.sub(r"&", "%26", title)
 
@@ -29,10 +31,39 @@ def clean_title_description(title: str) -> str:
     Returns:
         str: Cleaned title.
     """
+
     cleaned = re.sub(r"[^A-Za-z0-9\s]+", " ", title)
     cleaned = re.sub(r"\s+", " ", cleaned)
 
     return cleaned
+
+def compare_titles(string1: str, string2: str) -> float:
+    """
+    Compares two titles using the SequenceMatcher class from the difflib
+    module. The similarity is returned as a float between 0 and 1.
+
+    Args:
+        string1: The first title.
+        string2: The second title.
+
+    Returns:
+        The similarity between the two titles.
+    """
+
+    string1 = string1.lower().strip()
+    string2 = string2.lower().strip()
+
+    string1 = ' '.join(string1.split())
+    string2 = ' '.join(string2.split())
+
+    translator = str.maketrans('', '', string.punctuation)
+    string1_clean = string1.translate(translator)
+    string2_clean = string2.translate(translator)
+
+    # Compute the similarity score using SequenceMatcher
+    similarity = SequenceMatcher(None, string1_clean, string2_clean).ratio()
+
+    return similarity
 
 def get_product_description(soup: BeautifulSoup) -> str:
     """
@@ -44,6 +75,7 @@ def get_product_description(soup: BeautifulSoup) -> str:
     Returns:
         The product description
     """
+
     description = soup.find_all("div", {"class": "rgHvZc"})
 
     return description
@@ -58,6 +90,7 @@ def get_product_url(soup: BeautifulSoup) -> str:
     Returns:
         The product URL
     """
+
     urls = soup.find_all("div", {"class": "rgHvZc"})
 
     values = []
@@ -79,6 +112,7 @@ def get_product_price(soup: BeautifulSoup) -> np.ndarray:
         The price of each product. The price is represented as a
         NumPy array.
     """
+
     prices = soup.find_all("span", {"class": "HRLxBb"})
 
     values = []
@@ -103,6 +137,7 @@ def create_soup(url: str, headers: dict) -> BeautifulSoup:
     Returns:
         BeautifulSoup: BeautifulSoup object of the URL's HTML content
     """
+
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -123,6 +158,7 @@ def reject_outliers(data: list[float], m: float = 1.5) -> list[float]:
     Returns:
         A list of float values, with the outliers removed.
     """
+
     distribution = np.abs(data - np.median(data))
     m_deviation = np.median(distribution)
     standard = distribution / (m_deviation if m_deviation else 1.)
@@ -144,13 +180,14 @@ def price_difference_rating(initial: float, final: float) -> float:
     Returns:
         The rating.
     """
+
     if initial <= final:
         rating = 5.0
     else:
-        difference = min(initial, final) / max(initial, final)
-        rating = (difference / 20) * 100
-
-    return rating
+        price_diff = initial - final
+        rating = 5.0 - (price_diff / initial) * 5.0
+    
+    return max(0.0, min(rating, 5.0))
 
 def lowest_price_highest_similarity(filtered_prices_descriptions: dict) -> tuple[float, str, float]:
     """
@@ -164,19 +201,63 @@ def lowest_price_highest_similarity(filtered_prices_descriptions: dict) -> tuple
         The lowest price, the highest similarity, and the description
         associated with the highest similarity.
     """
-    max_similarity = 0
-    min_price = float('inf')
-    result = None
+    
+    # Initialize variables to hold the item with the highest similarity and lowest price
+    max_similarity_item = None
+    min_price_item = None
 
-    for item, info in filtered_prices_descriptions.items():
-        similarity = info['similarity']
-        price = info['price']
-        if similarity > max_similarity or (similarity == max_similarity and price < min_price):
-            max_similarity = similarity
-            min_price = price
-            result = (item, info)
+    # Iterate over each item in the dictionary
+    for item_name, item_details in filtered_prices_descriptions.items():
+        # If this is the first item we've seen, initialize max_similarity_item and min_price_item to this item
+        if max_similarity_item is None and min_price_item is None:
+            max_similarity_item = item_details
+            min_price_item = item_details
+        else:
+            # Compare the similarity and price of the current item to the current max_similarity_item and min_price_item
+            if item_details['similarity'] > max_similarity_item['similarity']:
+                max_similarity_item = item_details
+            if item_details['price'] < min_price_item['price']:
+                min_price_item = item_details
 
-    return result
+    # Check if the highest similarity item is the same as the lowest price item
+    if max_similarity_item == min_price_item:
+        return (item_name, max_similarity_item)
+    else:
+        # Find the item with the highest similarity
+        max_similarity_item = max(filtered_prices_descriptions.values(), key=lambda x: x['similarity'])
+
+        # Find all items that have the highest similarity
+        max_similar_items = [(item_name, item_details) for item_name, item_details in filtered_prices_descriptions.items() if item_details['similarity'] == max_similarity_item['similarity']]
+
+        # Find the item with the highest price among the items with the highest similarity
+        max_similar_item = max(max_similar_items, key=lambda x: x[1]['price'])
+
+        return max_similar_item
+    
+def construct_candidates(descriptions, prices, urls, similarities):
+    """
+    Constructs a list of candidates from the descriptions, prices, and
+    urls.
+
+    Args:
+        descriptions: The descriptions of the products.
+        prices: The prices of the products.
+        urls: The urls of the products.
+
+    Returns:
+        The list of candidates.
+    """
+
+    candidates = {}
+    # Construct a nested dictionary of candidates where the key is the description and the value is a dictionary containing the price, url, and similarity
+    for i in range(len(descriptions)):
+        candidates[descriptions[i]] = {
+            "price": prices[i],
+            "url": urls[i],
+            "similarity": similarities[i]
+        }
+
+    return candidates
 
 
 def find_viable_product(title: str, ramp_down: float) -> tuple[list, list, list]:
@@ -193,6 +274,7 @@ def find_viable_product(title: str, ramp_down: float) -> tuple[list, list, list]
     Returns:
         The descriptions, prices and urls the viable products.
     """
+
     cleaned_title = clean_listing_title(title)
     headers = { 
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"
@@ -201,6 +283,7 @@ def find_viable_product(title: str, ramp_down: float) -> tuple[list, list, list]
     descriptions = []
     prices = []
     urls = []
+    similarities = []
 
     for page_number in range(3):
         start = page_number * 60
@@ -218,11 +301,14 @@ def find_viable_product(title: str, ramp_down: float) -> tuple[list, list, list]
 
         descriptions += list(filtered_prices_descriptions.keys())
 
-        prices += [f"{price['price']:,.2f}" for price in filtered_prices_descriptions.values()]
+        prices += [f"{product['price']:,.2f}" for product in filtered_prices_descriptions.values()]
 
-        urls += [price['url'] for price in filtered_prices_descriptions.values()]
+        urls += [product['url'] for product in filtered_prices_descriptions.values()]
 
-    best_result = lowest_price_highest_similarity(filtered_prices_descriptions)
+        similarities += [product['similarity'] for product in filtered_prices_descriptions.values()]
+
+    candidates = construct_candidates(descriptions, prices, urls, similarities)
+    best_result = lowest_price_highest_similarity(candidates)
 
     return descriptions, prices, urls, best_result
 
@@ -239,6 +325,7 @@ def listing_product_similarity(soup: BeautifulSoup, title: str, similarity_thres
     Returns:
         dict: A dictionary mapping the product ID to the product title.
     """
+
     normalized = get_product_price(soup)
     description = get_product_description(soup)
     url = get_product_url(soup)
@@ -247,7 +334,7 @@ def listing_product_similarity(soup: BeautifulSoup, title: str, similarity_thres
     for key, value, product_url in zip(description, normalized, url):
         google_shopping_title = clean_title_description(key.text.lower())
         listing_title = clean_title_description(title.lower())
-        price_description[key.text] = {'price': value, 'similarity': SequenceMatcher(None, google_shopping_title, listing_title).ratio(), 'url': product_url}
+        price_description[key.text] = {'price': value, 'similarity': compare_titles(google_shopping_title, listing_title), 'url': product_url}
 
     filtered_prices_descriptions = {}
     for key, value in price_description.items():
@@ -270,6 +357,7 @@ def percentage_difference(list_price: float, best_price: float) -> dict:
     Returns:
         dict: A dictionary mapping the percentage difference amount to the difference type.
     """
+
     difference = {
         "amount": -1,
         "type": "NaN"

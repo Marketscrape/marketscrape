@@ -71,6 +71,7 @@ class Index(View):
             # Create a scatter chart using Plotly Express
             fig = px.scatter(df, x='Product', text='Description', y='Price', size='Price', color='Price', color_continuous_scale='RdYlGn_r', range_color=[cmin, cmax])
             fig.update_traces(mode='markers', marker=dict(symbol='circle', sizemode='diameter', sizeref=sizeref))
+            fig.update_layout(template='plotly_white')
             chart = fig.to_json()           
 
             # Percetage difference between the listing price and the best found price

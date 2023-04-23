@@ -152,7 +152,34 @@ def price_difference_rating(initial: float, final: float) -> float:
 
     return rating
 
-def find_viable_product(title: str, ramp_down: float) -> tuple[float, float, float]:
+def lowest_price_highest_similarity(filtered_prices_descriptions: dict) -> tuple[float, str, float]:
+    """
+    Finds the lowest price and the highest similarity of the filtered
+    prices and descriptions.
+
+    Args:
+        filtered_prices_descriptions: The filtered prices and descriptions.
+
+    Returns:
+        The lowest price, the highest similarity, and the description
+        associated with the highest similarity.
+    """
+    max_similarity = 0
+    min_price = float('inf')
+    result = None
+
+    for item, info in filtered_prices_descriptions.items():
+        similarity = info['similarity']
+        price = info['price']
+        if similarity > max_similarity or (similarity == max_similarity and price < min_price):
+            max_similarity = similarity
+            min_price = price
+            result = (item, info)
+
+    return result
+
+
+def find_viable_product(title: str, ramp_down: float) -> tuple[list, list, list]:
     """
     Finds viable products based on the title of the Marketplace listing,
     and utilizes the ramp down of the previous product in the sequence, to 
@@ -171,26 +198,34 @@ def find_viable_product(title: str, ramp_down: float) -> tuple[float, float, flo
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"
     }
 
-    url = f"https://www.google.com/search?q={cleaned_title}&sa=X&biw=1920&bih=927&tbm=shop&sxsrf=ALiCzsbtwkWiDOQEcm_9X1UBlEG1iaqXtg%3A1663739640147&ei=-KYqY6CsCLez0PEP0Ias2AI&ved=0ahUKEwigiP-RmaX6AhW3GTQIHVADCysQ4dUDCAU&uact=5&oq=REPLACE&gs_lcp=Cgtwcm9kdWN0cy1jYxADMgUIABCABDIFCAAQgAQyBQgAEIAEMgsIABCABBCxAxCDATIECAAQAzIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEOgsIABAeEA8QsAMQGDoNCAAQHhAPELADEAUQGDoGCAAQChADSgQIQRgBUM4MWO4TYJoVaAFwAHgAgAFDiAGNA5IBATeYAQCgAQHIAQPAAQE&sclient=products-cc"
-    soup = create_soup(url, headers)
-    similarity_threshold = 0.25
+    descriptions = []
+    prices = []
+    urls = []
 
-    try:
-        filtered_prices_descriptions = listing_product_similarity(soup, cleaned_title, similarity_threshold)
-        assert len(filtered_prices_descriptions) > 0
-    except AssertionError:
-        while len(filtered_prices_descriptions) == 0:
-            ramp_down += 0.05
-            filtered_prices_descriptions = listing_product_similarity(soup, cleaned_title, similarity_threshold - ramp_down)
+    for page_number in range(3):
+        start = page_number * 60
+        url = f"https://www.google.com/search?q={cleaned_title}&tbs=vw:d&tbm=shop&sxsrf=APwXEdeCneQw6hWKHlHMJptjJHcIzqvmvw:1682209446957&ei=pnpEZILiOcmD0PEPifacgAw&start={start}&sa=N&ved=0ahUKEwiCzZfE3r7-AhXJATQIHQk7B8AQ8tMDCLEY&biw=1920&bih=927&dpr=1"
+        soup = create_soup(url, headers)
+        similarity_threshold = 0.25
 
-    descriptions = list(filtered_prices_descriptions.keys())
+        try:
+            filtered_prices_descriptions = listing_product_similarity(soup, cleaned_title, similarity_threshold)
+            assert len(filtered_prices_descriptions) > 0
+        except AssertionError:
+            while len(filtered_prices_descriptions) == 0:
+                ramp_down += 0.05
+                filtered_prices_descriptions = listing_product_similarity(soup, cleaned_title, similarity_threshold - ramp_down)
 
-    prices = list(filtered_prices_descriptions.values())
-    prices = [f"{price['price']:,.2f}" for price in prices]
+        descriptions += list(filtered_prices_descriptions.keys())
 
-    urls = [price['url'] for price in filtered_prices_descriptions.values()]
-    
-    return descriptions, prices, urls
+        prices += [f"{price['price']:,.2f}" for price in filtered_prices_descriptions.values()]
+
+        urls += [price['url'] for price in filtered_prices_descriptions.values()]
+
+    best_result = lowest_price_highest_similarity(filtered_prices_descriptions)
+
+    return descriptions, prices, urls, best_result
+
 
 def listing_product_similarity(soup: BeautifulSoup, title: str, similarity_threshold: float) -> dict:
     """
@@ -217,7 +252,7 @@ def listing_product_similarity(soup: BeautifulSoup, title: str, similarity_thres
     filtered_prices_descriptions = {}
     for key, value in price_description.items():
         if value['similarity'] >= similarity_threshold:
-            filtered_prices_descriptions[key] = {'price': value['price'], 'url': value['url']}
+            filtered_prices_descriptions[key] = {'price': value['price'], 'url': value['url'], 'similarity': value['similarity']}
 
     return filtered_prices_descriptions
 

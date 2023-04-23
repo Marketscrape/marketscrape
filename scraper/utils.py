@@ -201,38 +201,25 @@ def lowest_price_highest_similarity(filtered_prices_descriptions: dict) -> tuple
         The lowest price, the highest similarity, and the description
         associated with the highest similarity.
     """
-    
-    # Initialize variables to hold the item with the highest similarity and lowest price
+
     max_similarity_item = None
     min_price_item = None
 
-    # Iterate over each item in the dictionary
     for item_name, item_details in filtered_prices_descriptions.items():
-        # If this is the first item we've seen, initialize max_similarity_item and min_price_item to this item
         if max_similarity_item is None and min_price_item is None:
             max_similarity_item = item_details
             min_price_item = item_details
         else:
-            # Compare the similarity and price of the current item to the current max_similarity_item and min_price_item
             if item_details['similarity'] > max_similarity_item['similarity']:
                 max_similarity_item = item_details
             if item_details['price'] < min_price_item['price']:
                 min_price_item = item_details
 
-    # Check if the highest similarity item is the same as the lowest price item
-    if max_similarity_item == min_price_item:
-        return (item_name, max_similarity_item)
-    else:
-        # Find the item with the highest similarity
-        max_similarity_item = max(filtered_prices_descriptions.values(), key=lambda x: x['similarity'])
+    max_similar_items = [(item_name, item_details) for item_name, item_details in filtered_prices_descriptions.items() if item_details['similarity'] == max_similarity_item['similarity']]
 
-        # Find all items that have the highest similarity
-        max_similar_items = [(item_name, item_details) for item_name, item_details in filtered_prices_descriptions.items() if item_details['similarity'] == max_similarity_item['similarity']]
+    min_price_item = min(max_similar_items, key=lambda x: x[1]['price'])
 
-        # Find the item with the highest price among the items with the highest similarity
-        max_similar_item = max(max_similar_items, key=lambda x: x[1]['price'])
-
-        return max_similar_item
+    return min_price_item
     
 def construct_candidates(descriptions, prices, urls, similarities):
     """
@@ -249,7 +236,6 @@ def construct_candidates(descriptions, prices, urls, similarities):
     """
 
     candidates = {}
-    # Construct a nested dictionary of candidates where the key is the description and the value is a dictionary containing the price, url, and similarity
     for i in range(len(descriptions)):
         candidates[descriptions[i]] = {
             "price": prices[i],

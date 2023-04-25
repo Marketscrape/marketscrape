@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
+from . import exceptions
 import numpy as np
 import requests
 import string
@@ -159,7 +160,13 @@ def reject_outliers(data: list[float], m: float = 1.5) -> list[float]:
         A list of float values, with the outliers removed.
     """
 
-    distribution = np.abs(data - np.median(data))
+    try:
+        if len(data) <= 0:
+            raise exceptions.InvalidDataFormat("Expected data, got nothing")
+        
+        distribution = np.abs(data - np.median(data))
+    except exceptions.InvalidDataFormat:
+        return data
     m_deviation = np.median(distribution)
     standard = distribution / (m_deviation if m_deviation else 1.)
 
@@ -184,8 +191,8 @@ def price_difference_rating(initial: float, final: float) -> float:
     if initial <= final:
         rating = 5.0
     else:
-        price_diff = initial - final
-        rating = 5.0 - (price_diff / initial) * 5.0
+        price_difference = initial - final
+        rating = 5.0 - (price_difference / initial) * 5.0
     
     return max(0.0, min(rating, 5.0))
 
@@ -205,7 +212,7 @@ def lowest_price_highest_similarity(filtered_prices_descriptions: dict) -> tuple
     max_similarity_item = None
     min_price_item = None
 
-    for item_name, item_details in filtered_prices_descriptions.items():
+    for _, item_details in filtered_prices_descriptions.items():
         if max_similarity_item is None and min_price_item is None:
             max_similarity_item = item_details
             min_price_item = item_details
@@ -271,7 +278,7 @@ def find_viable_product(title: str, ramp_down: float) -> tuple[list, list, list]
     urls = []
     similarities = []
 
-    for page_number in range(3):
+    for page_number in range(5):
         start = page_number * 60
         url = f"https://www.google.com/search?q={cleaned_title}&tbs=vw:d&tbm=shop&sxsrf=APwXEdeCneQw6hWKHlHMJptjJHcIzqvmvw:1682209446957&ei=pnpEZILiOcmD0PEPifacgAw&start={start}&sa=N&ved=0ahUKEwiCzZfE3r7-AhXJATQIHQk7B8AQ8tMDCLEY&biw=1920&bih=927&dpr=1"
         soup = create_soup(url, headers)
@@ -279,11 +286,21 @@ def find_viable_product(title: str, ramp_down: float) -> tuple[list, list, list]
 
         try:
             filtered_prices_descriptions = listing_product_similarity(soup, cleaned_title, similarity_threshold)
-            assert len(filtered_prices_descriptions) > 0
-        except AssertionError:
-            while len(filtered_prices_descriptions) == 0:
+            if not filtered_prices_descriptions:
+                raise exceptions.NoProductsFound("No similar products found")
+        except exceptions.NoProductsFound:
+            consecutively_empty = 0
+            while not filtered_prices_descriptions:
                 ramp_down += 0.05
                 filtered_prices_descriptions = listing_product_similarity(soup, cleaned_title, similarity_threshold - ramp_down)
+                if consecutively_empty == 5:
+                    break 
+
+                if filtered_prices_descriptions:
+                    consecutively_empty = 0
+                else:
+                    consecutively_empty +=1
+                
 
         descriptions += list(filtered_prices_descriptions.keys())
 
@@ -324,8 +341,14 @@ def listing_product_similarity(soup: BeautifulSoup, title: str, similarity_thres
 
     filtered_prices_descriptions = {}
     for key, value in price_description.items():
-        if value['similarity'] >= similarity_threshold:
-            filtered_prices_descriptions[key] = {'price': value['price'], 'url': value['url'], 'similarity': value['similarity']}
+        try:
+            if similarity_threshold < 0:
+                raise exceptions.InvalidSimilarityThreshold(f"Expected similarity score of >= 0, got {similarity_threshold}")
+            
+            if value['similarity'] >= similarity_threshold:
+                filtered_prices_descriptions[key] = {'price': value['price'], 'url': value['url'], 'similarity': value['similarity']}
+        except exceptions.InvalidSimilarityThreshold:
+            return filtered_prices_descriptions
 
     return filtered_prices_descriptions
 

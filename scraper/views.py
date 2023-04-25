@@ -11,6 +11,7 @@ class Index(View):
     def get(self, request):
         form = MarketForm()
         context = {'form': form}
+        
         return render(request, 'scraper/index.html', context)
 
     def post(self, request):
@@ -75,11 +76,12 @@ class Index(View):
             chart = fig.to_json()           
 
             # Percetage difference between the listing price and the best found price
-            list_best_context = percentage_difference(float(price), float(best_similar_price))
-            price_rating = price_difference_rating(float(price), float(best_similar_price))
+            list_best_context = percentage_difference(float(price), float(best_similar_price.replace(",", "")))
+            price_rating = price_difference_rating(float(price), float(best_similar_price.replace(",", "")))
 
-            # Get the unique categories
+            # Get the unique categories and total number of items
             categories = list(set(shortened_item_names))
+            total_items = len(similar_descriptions)
 
             # Create the context 
             context = {
@@ -97,6 +99,7 @@ class Index(View):
                 'category': category,
                 'city': city,
                 'categories': categories,
+                'total_items': total_items,
                 'best_similar_price': best_similar_price,
                 'best_similar_description': best_similar_description,
                 'best_similar_category': best_similar_category,

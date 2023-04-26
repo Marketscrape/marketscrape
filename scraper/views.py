@@ -2,10 +2,8 @@ from django.shortcuts import render
 from django.views import View
 from .forms import MarketForm
 from .utils import *
-from .scraper_class import FacebookScraper
-import re
-import plotly.express as px
-import pandas as pd
+from .shopping_class import GoogleShoppingScraper
+from .marketplace_class import FacebookMarketplaceScraper
 
 class Index(View):
     def get(self, request):
@@ -28,24 +26,30 @@ class Index(View):
             base_soup = create_soup(url, headers=None)
 
             # Create a FacebookScraper instance
-            scraper_instance = FacebookScraper(mobile_soup, base_soup)
+            facebook_instance = FacebookMarketplaceScraper(mobile_soup, base_soup)
 
             # Check if the listing is missing
-            if scraper_instance.is_listing_missing():
+            if facebook_instance.is_listing_missing():
                 return render(request, 'scraper/missing.html')
             
             # Get the listing data
-            image = scraper_instance.get_listing_image()
-            days, hours = scraper_instance.get_listing_date()
-            description = scraper_instance.get_listing_description()
-            title = scraper_instance.get_listing_title()
-            condition = scraper_instance.get_listing_condition()
-            category = scraper_instance.get_listing_category()
-            price = scraper_instance.get_listing_price()
-            city = scraper_instance.get_listing_city()
+            image = facebook_instance.get_listing_image()
+            days, hours = facebook_instance.get_listing_date()
+            description = facebook_instance.get_listing_description()
+            title = facebook_instance.get_listing_title()
+            condition = facebook_instance.get_listing_condition()
+            category = facebook_instance.get_listing_category()
+            price = facebook_instance.get_listing_price()
+            city = facebook_instance.get_listing_city()
+
+            # Create a GoogleShoppingScraper instance
+            shopping_instance = GoogleShoppingScraper()
 
             # Find viable products based on the title
-            similar_descriptions, similar_prices, similar_urls, best_similar_product = find_viable_product(title, ramp_down=0.0)
+            cleaned_title = remove_illegal_characters(title)
+            similar_descriptions, similar_prices, similar_urls, similar_scores = shopping_instance.find_viable_product(cleaned_title, ramp_down=0.0)
+            candidates = shopping_instance.construct_candidates(similar_descriptions, similar_prices, similar_urls, similar_scores)
+            best_similar_product = shopping_instance.lowest_price_highest_similarity(candidates)
 
             # Convert prices to float and shorten the descriptions if necessary
             similar_prices = [float(price.replace(',', '')) for price in similar_prices]
@@ -59,21 +63,7 @@ class Index(View):
             best_similar_url = similar_urls[idx]
             best_similar_score = best_similar_product[1]["similarity"] * 100
 
-            # Create a DataFrame from the data
-            data = {'Product': shortened_item_names, 'Price': similar_prices, 'Description': similar_descriptions, 'URL': similar_urls}
-            df = pd.DataFrame(data)
-
-            # Determine color range bounds and size reference for the chart
-            cmin = min(similar_prices)
-            cmax = max(similar_prices)
-            desired_diameter = 150
-            sizeref = cmax / desired_diameter
-
-            # Create a scatter chart using Plotly Express
-            fig = px.scatter(df, x='Product', text='Description', y='Price', size='Price', color='Price', color_continuous_scale='RdYlGn_r', range_color=[cmin, cmax])
-            fig.update_traces(mode='markers', marker=dict(symbol='circle', sizemode='diameter', sizeref=sizeref))
-            fig.update_layout(template='plotly_white')
-            chart = fig.to_json()           
+            chart = create_chart(shortened_item_names, similar_prices, similar_descriptions, similar_urls)   
 
             # Percetage difference between the listing price and the best found price
             list_best_context = percentage_difference(float(price), float(best_similar_price.replace(",", "")))

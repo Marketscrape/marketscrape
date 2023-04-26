@@ -1,12 +1,12 @@
 from bs4 import BeautifulSoup
-from difflib import SequenceMatcher
-from . import exceptions
+from .exceptions import *
 import numpy as np
 import requests
-import string
 import re
+import plotly.express as px
+import pandas as pd
 
-def clean_listing_title(title: str) -> str:
+def remove_illegal_characters(title: str) -> str:
     """
     Clean a listing title by removing punctuation and converting to lowercase.
 
@@ -22,7 +22,7 @@ def clean_listing_title(title: str) -> str:
 
     return title
 
-def clean_title_description(title: str) -> str:
+def clean_text(title: str) -> str:
     """
     Remove non-ASCII characters from title and description fields.
 
@@ -37,96 +37,6 @@ def clean_title_description(title: str) -> str:
     cleaned = re.sub(r"\s+", " ", cleaned)
 
     return cleaned
-
-def compare_titles(string1: str, string2: str) -> float:
-    """
-    Compares two titles using the SequenceMatcher class from the difflib
-    module. The similarity is returned as a float between 0 and 1.
-
-    Args:
-        string1: The first title.
-        string2: The second title.
-
-    Returns:
-        The similarity between the two titles.
-    """
-
-    string1 = string1.lower().strip()
-    string2 = string2.lower().strip()
-
-    string1 = ' '.join(string1.split())
-    string2 = ' '.join(string2.split())
-
-    translator = str.maketrans('', '', string.punctuation)
-    string1_clean = string1.translate(translator)
-    string2_clean = string2.translate(translator)
-
-    # Compute the similarity score using SequenceMatcher
-    similarity = SequenceMatcher(None, string1_clean, string2_clean).ratio()
-
-    return similarity
-
-def get_product_description(soup: BeautifulSoup) -> str:
-    """
-    Returns the product description in the soup.
-
-    Args:
-        soup: a BeautifulSoup object containing a product page
-
-    Returns:
-        The product description
-    """
-
-    description = soup.find_all("div", {"class": "rgHvZc"})
-
-    return description
-
-def get_product_url(soup: BeautifulSoup) -> str:
-    """
-    Returns the product URL in the soup.
-
-    Args:
-        soup: a BeautifulSoup object containing a product page
-
-    Returns:
-        The product URL
-    """
-
-    urls = soup.find_all("div", {"class": "rgHvZc"})
-
-    values = []
-    for url in urls:
-        link = url.find('a', href=True)
-        result = link['href'].replace('/url?url=', '')
-        values.append(result)
-
-    return values
-
-def get_product_price(soup: BeautifulSoup) -> np.ndarray:
-    """
-    Extracts the price of each product from the HTML.
-
-    Args:
-        soup: The HTML to extract the price from.
-        
-    Returns:
-        The price of each product. The price is represented as a
-        NumPy array.
-    """
-
-    prices = soup.find_all("span", {"class": "HRLxBb"})
-
-    values = []
-    for price in prices:
-        values.append(price.text)
-
-    normalized = [re.sub("\$", "", price) for price in values]
-    normalized = [re.search(r"[0-9,.]*", price).group(0) for price in normalized]
-    normalized = [float(price.replace(",", "")) for price in normalized]
-    
-    outlierless = reject_outliers(np.array(normalized))
-
-    return outlierless
 
 def create_soup(url: str, headers: dict) -> BeautifulSoup:
     """
@@ -144,7 +54,7 @@ def create_soup(url: str, headers: dict) -> BeautifulSoup:
 
     return soup
 
-def reject_outliers(data: list[float], m: float = 1.5) -> list[float]:
+def reject_outliers(data: list[float], m: float) -> list[int]:
     """
     This function rejects outliers from the input list of data. The outliers are rejected using the
     Tukey method, which defines the outliers as the data that are more than m times the interquartile
@@ -157,20 +67,23 @@ def reject_outliers(data: list[float], m: float = 1.5) -> list[float]:
             considered outliers. The default value is 1.5.
 
     Returns:
-        A list of float values, with the outliers removed.
+        A list of indices where the outliers occured.
     """
 
     try:
         if len(data) <= 0:
-            raise exceptions.InvalidDataFormat("Expected data, got nothing")
-        
+            raise InvalidDataFormat("No data was provided")
+
         distribution = np.abs(data - np.median(data))
-    except exceptions.InvalidDataFormat:
-        return data
+    except InvalidDataFormat:
+        return []
+
     m_deviation = np.median(distribution)
     standard = distribution / (m_deviation if m_deviation else 1.)
 
-    return data[standard < m].tolist()
+    indices = np.where(standard >= m)[0]
+
+    return indices.tolist()
 
 def price_difference_rating(initial: float, final: float) -> float:
     """
@@ -195,163 +108,6 @@ def price_difference_rating(initial: float, final: float) -> float:
         rating = 5.0 - (price_difference / initial) * 5.0
     
     return max(0.0, min(rating, 5.0))
-
-def lowest_price_highest_similarity(filtered_prices_descriptions: dict) -> tuple[float, str, float]:
-    """
-    Finds the lowest price and the highest similarity of the filtered
-    prices and descriptions.
-
-    Args:
-        filtered_prices_descriptions: The filtered prices and descriptions.
-
-    Returns:
-        The lowest price, the highest similarity, and the description
-        associated with the highest similarity.
-    """
-
-    max_similarity_item = None
-    min_price_item = None
-
-    for _, item_details in filtered_prices_descriptions.items():
-        if max_similarity_item is None and min_price_item is None:
-            max_similarity_item = item_details
-            min_price_item = item_details
-        else:
-            if item_details['similarity'] > max_similarity_item['similarity']:
-                max_similarity_item = item_details
-            if item_details['price'] < min_price_item['price']:
-                min_price_item = item_details
-
-    max_similar_items = [(item_name, item_details) for item_name, item_details in filtered_prices_descriptions.items() if item_details['similarity'] == max_similarity_item['similarity']]
-
-    min_price_item = min(max_similar_items, key=lambda x: x[1]['price'])
-
-    return min_price_item
-    
-def construct_candidates(descriptions, prices, urls, similarities):
-    """
-    Constructs a list of candidates from the descriptions, prices, and
-    urls.
-
-    Args:
-        descriptions: The descriptions of the products.
-        prices: The prices of the products.
-        urls: The urls of the products.
-
-    Returns:
-        The list of candidates.
-    """
-
-    candidates = {}
-    for i in range(len(descriptions)):
-        candidates[descriptions[i]] = {
-            "price": prices[i],
-            "url": urls[i],
-            "similarity": similarities[i]
-        }
-
-    return candidates
-
-
-def find_viable_product(title: str, ramp_down: float) -> tuple[list, list, list]:
-    """
-    Finds viable products based on the title of the Marketplace listing,
-    and utilizes the ramp down of the previous product in the sequence, to 
-    find the descriptions, prices, and urls of the prices of the product.
-
-    Args:
-        title: The title of the product.
-        ramp_down: The ramp down of the previous product in the
-            sequence.
-
-    Returns:
-        The descriptions, prices and urls the viable products.
-    """
-
-    cleaned_title = clean_listing_title(title)
-    headers = { 
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"
-    }
-
-    descriptions = []
-    prices = []
-    urls = []
-    similarities = []
-
-    for page_number in range(5):
-        start = page_number * 60
-        url = f"https://www.google.com/search?q={cleaned_title}&tbs=vw:d&tbm=shop&sxsrf=APwXEdeCneQw6hWKHlHMJptjJHcIzqvmvw:1682209446957&ei=pnpEZILiOcmD0PEPifacgAw&start={start}&sa=N&ved=0ahUKEwiCzZfE3r7-AhXJATQIHQk7B8AQ8tMDCLEY&biw=1920&bih=927&dpr=1"
-        soup = create_soup(url, headers)
-        similarity_threshold = 0.25
-
-        try:
-            filtered_prices_descriptions = listing_product_similarity(soup, cleaned_title, similarity_threshold)
-            if not filtered_prices_descriptions:
-                raise exceptions.NoProductsFound("No similar products found")
-        except exceptions.NoProductsFound:
-            consecutively_empty = 0
-            while not filtered_prices_descriptions:
-                ramp_down += 0.05
-                filtered_prices_descriptions = listing_product_similarity(soup, cleaned_title, similarity_threshold - ramp_down)
-                if consecutively_empty == 5:
-                    break 
-
-                if filtered_prices_descriptions:
-                    consecutively_empty = 0
-                else:
-                    consecutively_empty +=1
-                
-
-        descriptions += list(filtered_prices_descriptions.keys())
-
-        prices += [f"{product['price']:,.2f}" for product in filtered_prices_descriptions.values()]
-
-        urls += [product['url'] for product in filtered_prices_descriptions.values()]
-
-        similarities += [product['similarity'] for product in filtered_prices_descriptions.values()]
-
-    candidates = construct_candidates(descriptions, prices, urls, similarities)
-    best_result = lowest_price_highest_similarity(candidates)
-
-    return descriptions, prices, urls, best_result
-
-
-def listing_product_similarity(soup: BeautifulSoup, title: str, similarity_threshold: float) -> dict:
-    """
-    Returns a dictionary of all products listed on the page that are similar to the given title.
-
-    Args:
-        soup (BeautifulSoup): The parsed HTML of the page.
-        title (str): The title of the product to compare against.
-        similarity_threshold (float): The minimum similarity ratio to consider a product similar.
-
-    Returns:
-        dict: A dictionary mapping the product ID to the product title.
-    """
-
-    normalized = get_product_price(soup)
-    description = get_product_description(soup)
-    url = get_product_url(soup)
-
-    price_description = {}
-    for key, value, product_url in zip(description, normalized, url):
-        google_shopping_title = clean_title_description(key.text.lower())
-        listing_title = clean_title_description(title.lower())
-        price_description[key.text] = {'price': value, 'similarity': compare_titles(google_shopping_title, listing_title), 'url': product_url}
-
-    filtered_prices_descriptions = {}
-    for key, value in price_description.items():
-        try:
-            if similarity_threshold < 0:
-                raise exceptions.InvalidSimilarityThreshold(f"Expected similarity score of >= 0, got {similarity_threshold}")
-            
-            if value['similarity'] >= similarity_threshold:
-                filtered_prices_descriptions[key] = {'price': value['price'], 'url': value['url'], 'similarity': value['similarity']}
-        except exceptions.InvalidSimilarityThreshold:
-            return filtered_prices_descriptions
-
-    return filtered_prices_descriptions
-
 
 def percentage_difference(list_price: float, best_price: float) -> dict:
     """
@@ -382,3 +138,34 @@ def percentage_difference(list_price: float, best_price: float) -> dict:
         difference["type"] = "increase"
 
     return difference
+
+def create_chart(shortened_item_names: list[str], similar_prices: list[float], similar_descriptions: list[str], similar_urls: list[str]) -> object:
+    """
+    Creates a scatter chart using Plotly Express to visualize a list of items with their prices, descriptions, and URLs.
+
+    Args:
+        shortened_item_names (list[str]): A list of shortened names of the items.
+        similar_prices (list[float]): A list of prices of the items.
+        similar_descriptions (list[str]): A list of descriptions of the items.
+        similar_urls (list[str]): A list of URLs of the items.
+
+    Returns:
+        A Plotly JSON object containing the scatter chart.
+    """
+
+    # Create a DataFrame from the data
+    data = {'Product': shortened_item_names, 'Price': similar_prices, 'Description': similar_descriptions, 'URL': similar_urls}
+    df = pd.DataFrame(data)
+
+    # Determine color range bounds and size reference for the chart
+    cmin = min(similar_prices)
+    cmax = max(similar_prices)
+    desired_diameter = 150
+    sizeref = cmax / desired_diameter
+
+    # Create a scatter chart using Plotly Express
+    fig = px.scatter(df, x='Product', text='Description', y='Price', size='Price', color='Price', color_continuous_scale='RdYlGn_r', range_color=[cmin, cmax])
+    fig.update_traces(mode='markers', marker=dict(symbol='circle', sizemode='diameter', sizeref=sizeref))
+    fig.update_layout(template='plotly_white')
+
+    return fig.to_json() 

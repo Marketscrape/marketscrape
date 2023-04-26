@@ -3,7 +3,7 @@ import re
 import json
 from .utils import *
 
-class FacebookScraper:
+class FacebookMarketplaceScraper:
     def __init__(self, mobile_soup, base_soup):
         self.mobile_soup = mobile_soup
         self.base_soup = base_soup
@@ -22,22 +22,68 @@ class FacebookScraper:
         self.json_content = json_content
 
     def get_listing_price(self) -> float:
+        """
+        Retrieves the price of a product listing.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            The price of the product listing as a float.
+        """
 
         return self.json_content["offers"]["price"]
 
     def get_listing_title(self) -> str:
+        """
+        Retrieves the title of a product listing.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            The title of the product listing as a string.
+        """
 
         return self.json_content["name"]
     
     def get_listing_description(self) -> str:
+        """
+        Retrieves the description of a product listing.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            The description of the product listing as a string.
+        """
 
         return self.json_content['description']
     
     def get_listing_city(self) -> str:
+        """
+        Retrieves the city where a product is located.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            The city where the product is located as a string.
+        """
 
         return self.json_content["itemListElement"][1]["name"]
     
     def get_listing_condition(self) -> str:
+        """
+        Retrieves the condition of a product listing.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            The condition of the product listing as a string.
+        """
+
         # Item condition distribution based off of Mercari's dataset
         item_conditions = {
             "New": 43.21,
@@ -58,16 +104,45 @@ class FacebookScraper:
             return condition
 
     def get_listing_category(self) -> str:
+        """
+        Retrieves the category of a product listing.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            The category of the product listing as a string.
+        """
 
         return self.json_content["itemListElement"][2]["name"]
     
     def get_listing_image(self) -> str:
+        """
+        Retrieves the image of a product listing.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            The URL of the image of the product listing as a string.
+        """
+
         images = self.mobile_soup.find_all("img")
         image = [image["src"] for image in images if "https://scontent" in image["src"]]
 
         return image[0]
     
     def get_listing_date(self) -> tuple[int, int]:
+        """
+        Retrieves the listing date of a product.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            A tuple containing the number of days and hours since the listing was posted.
+        """
+
         tag = self.mobile_soup.find('abbr')
         tag = tag.text.strip()
 
@@ -102,6 +177,16 @@ class FacebookScraper:
         return (days, hours)
 
     def is_listing_missing(self) -> bool:
+        """
+        Checks if a listing is missing.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            True if the listing is missing, otherwise False.
+        """
+
         title_element = self.mobile_soup.find("title")
         title = title_element.get_text()
 

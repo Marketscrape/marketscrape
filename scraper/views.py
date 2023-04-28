@@ -49,29 +49,32 @@ class Index(View):
             cleaned_title = remove_illegal_characters(title)
             similar_descriptions, similar_prices, similar_urls, similar_scores = shopping_instance.find_viable_product(cleaned_title, ramp_down=0.0)
             candidates = shopping_instance.construct_candidates(similar_descriptions, similar_prices, similar_urls, similar_scores)
-            best_similar_product = shopping_instance.lowest_price_highest_similarity(candidates)
-
+            
             # Convert prices to float and shorten the descriptions if necessary
             similar_prices = [float(price.replace(',', '')) for price in similar_prices]
-            shortened_item_names = [description[:8] + '...' if len(description) > 10 else description for description in similar_descriptions]
+
+            # Categorize the titles and create the chart and wordcloud
+            categorized = categorize_titles(similar_descriptions)
+            chart = create_chart(categorized, similar_prices, similar_descriptions)
+            wordcloud, website_counts = create_wordcloud(similar_urls)   
 
             # Based on the best similar product, get the price, description, category, and URL
-            idx = similar_urls.index(best_similar_product[1]["url"])
-            best_similar_price = f"{similar_prices[idx]:,.2f}"
-            best_similar_description = similar_descriptions[idx]
-            best_similar_category = shortened_item_names[idx]
-            best_similar_url = similar_urls[idx]
-            best_similar_score = best_similar_product[1]["similarity"] * 100
+            best_product = shopping_instance.lowest_price_highest_similarity(candidates)
 
-            chart = create_chart(shortened_item_names, similar_prices, similar_descriptions, similar_urls)   
+            idx = similar_urls.index(best_product[1]["url"])
+            best_price = f"{similar_prices[idx]:,.2f}"
+            best_title = similar_descriptions[idx]
+            best_score = best_product[1]["similarity"] * 100
+            best_category = [key for key, value in categorized.items() if [item for item in value if item == best_title]][0]
 
             # Percetage difference between the listing price and the best found price
-            list_best_context = percentage_difference(float(price), float(best_similar_price.replace(",", "")))
-            price_rating = price_difference_rating(float(price), float(best_similar_price.replace(",", "")))
+            best_context = percentage_difference(float(price), float(best_price.replace(",", "")))
+            price_rating = price_difference_rating(float(price), float(best_price.replace(",", "")))
 
-            # Get the unique categories and total number of items
-            categories = list(set(shortened_item_names))
+            # Get the total number of items
             total_items = len(similar_descriptions)
+            max_citations = max([value for value in website_counts.values()])
+            max_website = [key for key, value in website_counts.items() if value == max_citations][0]
 
             # Create the context 
             context = {
@@ -80,6 +83,7 @@ class Index(View):
                 'title': title,
                 'price': f"{float(price):,.2f}",
                 'chart': chart,
+                'wordcloud': wordcloud,
                 'price_rating': round(price_rating, 1),
                 'days': days,
                 'hours': hours,
@@ -88,14 +92,16 @@ class Index(View):
                 'condition': condition,
                 'category': category,
                 'city': city,
-                'categories': categories,
+                'categorized': categorized,
                 'total_items': total_items,
-                'best_similar_price': best_similar_price,
-                'best_similar_description': best_similar_description,
-                'best_similar_category': best_similar_category,
-                'best_similar_url': best_similar_url,
-                'best_similar_score': f"{best_similar_score:.2f}",
-                'list_best_context': list_best_context
+                'best_price': best_price,
+                'best_title': best_title.title(),
+                'best_score': round(best_score, 2),
+                'website_counts': website_counts,
+                'max_website': max_website,
+                'max_citations': max_citations,
+                'best_category': best_category,
+                'best_context': best_context
             }
 
             return render(request, 'scraper/result.html', context)

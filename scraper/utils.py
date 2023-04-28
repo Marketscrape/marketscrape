@@ -4,7 +4,12 @@ import numpy as np
 import requests
 import re
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import TfidfVectorizer
+from wordcloud import WordCloud
+from collections import Counter
 
 def remove_illegal_characters(title: str) -> str:
     """
@@ -139,33 +144,106 @@ def percentage_difference(list_price: float, best_price: float) -> dict:
 
     return difference
 
-def create_chart(shortened_item_names: list[str], similar_prices: list[float], similar_descriptions: list[str], similar_urls: list[str]) -> object:
+def create_chart(categorized: dict, similar_prices: list[float], similar_descriptions: list[str]) -> object:
     """
-    Creates a scatter chart using Plotly Express to visualize a list of items with their prices, descriptions, and URLs.
+    Creates a line chart visualization based on the categorized items, their prices, and their descriptions.
 
     Args:
-        shortened_item_names (list[str]): A list of shortened names of the items.
+        categorized (dict): A dictionary where the keys are the names of the clusters and the values are lists of the items in that cluster.
         similar_prices (list[float]): A list of prices of the items.
         similar_descriptions (list[str]): A list of descriptions of the items.
-        similar_urls (list[str]): A list of URLs of the items.
 
     Returns:
-        A Plotly JSON object containing the scatter chart.
+        A JSON string containing the Plotly figure of the line chart.
     """
 
-    # Create a DataFrame from the data
-    data = {'Product': shortened_item_names, 'Price': similar_prices, 'Description': similar_descriptions, 'URL': similar_urls}
-    df = pd.DataFrame(data)
+    items, prices, descriptions = [], [], []
+    unit = 1
 
-    # Determine color range bounds and size reference for the chart
-    cmin = min(similar_prices)
-    cmax = max(similar_prices)
-    desired_diameter = 150
-    sizeref = cmax / desired_diameter
+    for categories, titles in categorized.items():
+        items.append(categories)
 
-    # Create a scatter chart using Plotly Express
-    fig = px.scatter(df, x='Product', text='Description', y='Price', size='Price', color='Price', color_continuous_scale='RdYlGn_r', range_color=[cmin, cmax])
-    fig.update_traces(mode='markers', marker=dict(symbol='circle', sizemode='diameter', sizeref=sizeref))
-    fig.update_layout(template='plotly_white')
+        sub_prices, sub_descriptions = [], []
+        for title in titles:
+            idx = similar_descriptions.index(title)
+            sub_prices.append(similar_prices[idx])
 
-    return fig.to_json() 
+            sub_descriptions.append(title)
+        prices.append(sub_prices)
+        descriptions.append(sub_descriptions)
+
+    fig = go.Figure()
+
+    for i, _ in enumerate(items):
+        x = [j*unit for j in range(len(prices[i]))]
+        hovertext = [f"Product: {desc.title()}<br>Price: ${price:.2f}" for price, desc in zip(prices[i], descriptions[i])]
+        fig.add_trace(go.Scatter(x=x, y=prices[i], mode='markers+lines', hovertemplate="%{text}", text=hovertext, name=f"Category {i+1}"))
+        
+    fig.update_layout(template='plotly_white', hovermode='x')
+    
+    return fig.to_json()
+
+def create_wordcloud(urls: list[str]) -> tuple[object, dict]:
+    """
+    Creates a word cloud visualization based on a list of website URLs.
+
+    Args:
+        urls (list[str]): A list of website URLs to be used to generate the word cloud.
+
+    Returns:
+        A tuple of the following:
+        - A JSON string containing the Plotly Express figure of the word cloud.
+        - A dictionary where the keys are the website names and the values are the frequency count of each website in the URLs list.
+    """
+
+    websites = []
+    for url in urls:
+        match = re.search(r'^https?://(?:www\.)?([^/]+)', url)
+        if match:
+            website = match.group(1)
+            websites.append(website)
+
+    website_counts = Counter(websites)
+    wordcloud = WordCloud(
+        background_color='white',
+        width=2000,
+        height=1000, 
+        scale=4, 
+        prefer_horizontal=0.9,
+        colormap='seismic_r').generate_from_frequencies(website_counts)
+
+    fig = px.imshow(wordcloud)
+
+    return fig.to_json(), dict(website_counts)
+
+def categorize_titles(items: list[str]) -> dict:
+    """
+    Categorizes a list of text items using KMeans clustering and TF-IDF vectorization.
+
+    Args:
+    items (list[str]): A list of text items to be categorized.
+
+    Returns:
+    A dictionary where the keys are the names of the clusters and the values are lists of the items in that cluster.
+    """
+
+    vectorizer = TfidfVectorizer()
+    X = vectorizer.fit_transform(items)
+
+    num_clusters = len(items) // 5
+    kmeans = KMeans(n_clusters=num_clusters, n_init=10)
+    kmeans.fit(X)
+
+    cluster_names = []
+    for i in range(num_clusters):
+        cluster_items = [items[j] for j in range(len(items)) if kmeans.labels_[j] == i]
+        representative_item = f"{i+1}"
+        cluster_names.append(representative_item)
+
+    clusters = {}
+    for i in range(num_clusters):
+        cluster_items = [items[j] for j in range(len(items)) if kmeans.labels_[j] == i]
+        cluster_name = cluster_names[i]
+        clusters[cluster_name] = cluster_items
+
+    return clusters

@@ -52,29 +52,62 @@
                         Listed {{ days }} days and {{ hours }} hours ago, for ${{ price }}
                     {% endif %}
                 </h6>
-                <p>
-                    Given the sheer variety of product names we encountered, we've taken the liberty of grouping our {{ total_items }} findings into {{ categories|length }} funky and fun categories based 
-                    on the lengths of the names. This nifty approach allowed us to whip up some visually engaging graphics that are sure to tickle your fancy while providing valuable insights.
-                </p>
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item">
+                    <a class="nav-link active" id="chart-tab" data-toggle="tab" href="#chart" role="tab" aria-controls="chart" aria-selected="true">Price Trends</a>
+                    </li>
+                    <li class="nav-item">
+                    <a class="nav-link" id="wordcloud-tab" data-toggle="tab" href="#wordcloud" role="tab" aria-controls="wordcloud" aria-selected="false">Website Frequencies</a>
+                    </li>
+                </ul>
+                  
+                <div class="tab-content" id="myTabContent">
+                    <div class="tab-pane fade show active" id="chart" role="tabpanel" aria-labelledby="chart-tab">
+                        <div id="chart-container">
+                            <p style="margin-top: 0.5rem;">
+                                We've gone through {{ total_items }} items with a fine-tooth comb and sorted them into {{ categorized|length }} unique categories, 
+                                each with its own special number from 1 to {{ categorized|length }}. Get ready to discover the ultimate categorization extravaganza! 
+                            </p>
+                            <div id="render-chart" data-chart="{{ chart }}"></div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="wordcloud" role="tabpanel" aria-labelledby="wordcloud-tab">
+                        <div id="wordcloud-container">
+                            <p style="margin-top: 0.5rem;">
+                                We've gone on a wild goose chase and uncovered {{ website_counts|length }} distinct urls from our search of {{ total_items }} items. 
+                                It looks like the most popular website we came across was <b>{{ max_website }}</b>, with a whopping {{ max_citations }} citations. Now that's some serious internet clout! 
+                            </p>
+                            <div id="render-wordcloud" data-chart="{{ wordcloud }}"></div>
+                        </div>
+                    </div>
+                </div>
 
-                <p>
-                    Get ready for some serious fun with our bubble chart! It's like a carnival for your data, with colorful bubbles representing the prices of products in each of the 
-                    {{ categories|length }} categories. The bigger and higher a bubble is, the more expensive the product. But don't worry, we've color-coded the bubbles to help you spot the 
-                    priciest ones – just look for the ones that are redder than a lobster in the sun! And with this playful and intuitive way to explore your data, you'll feel like a kid again!
-                </p>
-                <div id="chart" data-chart="{{ chart }}"></div>
-                <p>
-                    Looks like we've found a winner! Our fancy-schmancy algorithm suggests that the <a style="color:#28a745" href="{{ best_similar_url }}" target="_blank">{{ best_similar_description }}</a> product, located in the <span style="color:#28a745">{{ best_similar_category }}</span> category, is the closest match to your list item, with a mind-blowing similarity score of <span style="color:#28a745">{{ best_similar_score }}%</span> and the sweetest price of <span style="color:#28a745">${{ best_similar_price}}</span>.
-                    {% if list_best_context.type == "decrease" %}
-                        Talk about a bargain! This baby is <span style="color:#28a745">{{ list_best_context.amount }}%</span> cheaper than your original pick!
-                    {% else %}
-                        Oops, looks like this one's <span style="color:#dc3545">{{ list_best_context.amount }}%</span> more expensive than your original choice.
-                    {% endif %}
-                    Anyway, we won't tell your list item that you've found a new love 😉
-                </p>
+                <div class="alert {% if best_context.type == 'decrease' %}alert-success{% else %}alert-danger{% endif %}" role="alert">
+                    <h4 class="alert-heading">
+                        {% if best_context.type == 'decrease' %}
+                            Great news!
+                        {% else %}
+                            Uh oh...
+                        {% endif %}
+                    </h4>
+                    <p>After running our advanced algorithms and crunching the numbers, we have identified <b>{{ best_title }}</b> as the ultimate bargaining chip for you! 
+                        With a jaw-dropping match percentage of {{ best_score }}%, it's practically a match made in heaven with your chosen listing. And the cherry on top? 
+                        It's currently listed at a steal of a price - just ${{ best_price }} - under the super cool category of {{ best_category }}. 
+                        You won't find a better deal anywhere else!
+                    </p>
+                    <hr>
+                    <p>{% if best_context.type == 'decrease' %}
+                        Fortunately, it's {{ best_context.amount }}% cheaper than your original pick! You're getting a great deal! Use it as a bargaining chip to get an even better price. ✔️
+                      {% else %}
+                        Unfortunately, it's {{ best_context.amount }}% more expensive than your original pick. But don't lose hope! You can still use it to negotiate a better price for your preferred item. ❌
+                      {% endif %}
+                    </p>
+                </div>
+                  
             </div>
         </div>
     </div>
 
     <script src="{% static 'plotSimilarResults.js' %}"></script>
+    <script src="{% static 'plotWordCloud.js' %}"></script>
 {% endblock content %}

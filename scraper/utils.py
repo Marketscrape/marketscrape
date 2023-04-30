@@ -171,15 +171,25 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_descrip
             sub_descriptions.append(title)
         prices.append(sub_prices)
         descriptions.append(sub_descriptions)
+    
+    sort_indices = [sorted(range(len(sublist)), key=lambda x: sublist[x]) for sublist in prices]
+    sorted_prices = [[sublist[i] for i in indices] for sublist, indices in zip(prices, sort_indices)]
+    sorted_descriptions = [[sublist[i] for i in indices] for sublist, indices in zip(descriptions, sort_indices)]
 
     fig = go.Figure()
 
     for i, _ in enumerate(items):
-        x = [j*unit for j in range(len(prices[i]))]
-        hovertext = [f"Product: {desc.title()}<br>Price: ${price:.2f}" for price, desc in zip(prices[i], descriptions[i])]
-        fig.add_trace(go.Scatter(x=x, y=prices[i], mode='markers+lines', hovertemplate="%{text}", text=hovertext, name=f"Category {i+1}"))
+        x = [j*unit + 1 for j in range(len(sorted_prices[i]))]
+        hovertext = [f"Product: {desc.title()}<br>Price: ${price:.2f}" for price, desc in zip(sorted_prices[i], sorted_descriptions[i])]
+        fig.add_trace(go.Scatter(x=x, y=sorted_prices[i], mode='markers+lines', hovertemplate="%{text}", text=hovertext, name=f"Category {i + 1}"))
         
-    fig.update_layout(template='plotly_white', hovermode='x')
+    fig.update_layout(template='plotly_white', hovermode='closest', 
+                    yaxis=dict(
+                        tickprefix="$"
+                    ),
+                    xaxis=dict(
+                        tickprefix="Item #"
+                    ))
     
     return fig.to_json()
 

@@ -52,58 +52,57 @@
                         Listed {{ days }} days and {{ hours }} hours ago, for ${{ price }}
                     {% endif %}
                 </h6>
-                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <ul class="nav nav-tabs" id="nav-tab" role="tablist">
                     <li class="nav-item">
-                    <a class="nav-link active" id="chart-tab" data-toggle="tab" href="#chart" role="tab" aria-controls="chart" aria-selected="true">Price Trends</a>
+                        <a class="nav-link active" id="main-tab" data-toggle="tab" href="#main" role="tab" aria-controls="chart" aria-selected="true">Findings</a>
                     </li>
                     <li class="nav-item">
-                    <a class="nav-link" id="wordcloud-tab" data-toggle="tab" href="#wordcloud" role="tab" aria-controls="wordcloud" aria-selected="false">Website Frequencies</a>
+                        <a class="nav-link" id="chart-tab" data-toggle="tab" href="#chart" role="tab" aria-controls="chart" aria-selected="false">Price Trends</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="wordcloud-tab" data-toggle="tab" href="#wordcloud" role="tab" aria-controls="wordcloud" aria-selected="false">Website Frequencies</a>
                     </li>
                 </ul>
                   
-                <div class="tab-content" id="myTabContent">
-                    <div class="tab-pane fade show active" id="chart" role="tabpanel" aria-labelledby="chart-tab">
-                        <div id="chart-container">
-                            <p style="margin-top: 0.5rem;">
-                                We've gone through {{ total_items }} items with a fine-tooth comb and sorted them into {{ categorized|length }} unique categories, 
-                                each with its own special number from 1 to {{ categorized|length }}. Get ready to discover the ultimate categorization extravaganza! 
+                <div class="tab-content" id="nav-tabContent" >
+                    <div class="tab-pane fade show active" id="main" role="tabpanel" aria-labelledby="main-tab">
+                        <div class="alert {% if best_context.type == 'decrease' %}alert-success{% else %}alert-danger{% endif %}" role="alert" style="margin-top: 2.063rem;">
+                            <h4 class="alert-heading">
+                                {% if best_context.type == 'decrease' %}
+                                    Great news!
+                                {% else %}
+                                    Uh oh...
+                                {% endif %}
+                            </h4>
+                            <p>After running our advanced algorithms and crunching the numbers, we have identified <b>{{ best_title }}</b> as the ultimate bargaining chip for you! 
+                                With a jaw-dropping match percentage of {{ best_score }}%, it's practically a match made in heaven with your chosen listing. And the cherry on top? 
+                                It's currently listed at a steal of a price - just ${{ best_price }} - under the super cool category of {{ best_category }}. 
+                                You won't find a better deal anywhere else!
                             </p>
-                            <div id="render-chart" data-chart="{{ chart }}"></div>
+                            <hr>
+                            <p>{% if best_context.type == 'decrease' %}
+                                Fortunately, it's {{ best_context.amount }}% cheaper than your original pick! You're getting a great deal! Use it as a bargaining chip to get an even better price. ✔️
+                                {% else %}
+                                Unfortunately, it's {{ best_context.amount }}% more expensive than your original pick. But don't lose hope! You can still use it to negotiate a better price for your preferred item. ❌
+                                {% endif %}
+                            </p>
                         </div>
                     </div>
-                    <div class="tab-pane fade" id="wordcloud" role="tabpanel" aria-labelledby="wordcloud-tab">
-                        <div id="wordcloud-container">
-                            <p style="margin-top: 0.5rem;">
-                                We've gone on a wild goose chase and uncovered {{ website_counts|length }} distinct urls from our search of {{ total_items }} items. 
-                                It looks like the most popular website we came across was <b>{{ max_website }}</b>, with a whopping {{ max_citations }} citations. Now that's some serious internet clout! 
-                            </p>
-                            <div id="render-wordcloud" data-chart="{{ wordcloud }}"></div>
-                        </div>
+                    <div class="tab-pane fade active" id="chart" role="tabpanel" aria-labelledby="chart-tab">
+                        <div id="render-chart" data-chart="{{ chart }}"></div>
+                        <p>
+                            We've gone through {{ total_items }} items with a fine-tooth comb and sorted them into {{ categorized|length }} unique categories, 
+                            each with its own special number from 1 to {{ categorized|length }}. Get ready to discover the ultimate categorization extravaganza! 
+                        </p>
+                    </div>
+                    <div class="tab-pane fade active" id="wordcloud" role="tabpanel" aria-labelledby="wordcloud-tab">
+                        <div id="render-wordcloud" data-chart="{{ wordcloud }}"></div>
+                        <p>
+                            We've gone on a wild goose chase and uncovered {{ website_counts|length }} distinct urls from our search of {{ total_items }} items. 
+                            It looks like the most popular website we came across was <b>{{ max_website }}</b>, with a whopping {{ max_citations }} citations. Now that's some serious internet clout! 
+                        </p>
                     </div>
                 </div>
-
-                <div class="alert {% if best_context.type == 'decrease' %}alert-success{% else %}alert-danger{% endif %}" role="alert">
-                    <h4 class="alert-heading">
-                        {% if best_context.type == 'decrease' %}
-                            Great news!
-                        {% else %}
-                            Uh oh...
-                        {% endif %}
-                    </h4>
-                    <p>After running our advanced algorithms and crunching the numbers, we have identified <b>{{ best_title }}</b> as the ultimate bargaining chip for you! 
-                        With a jaw-dropping match percentage of {{ best_score }}%, it's practically a match made in heaven with your chosen listing. And the cherry on top? 
-                        It's currently listed at a steal of a price - just ${{ best_price }} - under the super cool category of {{ best_category }}. 
-                        You won't find a better deal anywhere else!
-                    </p>
-                    <hr>
-                    <p>{% if best_context.type == 'decrease' %}
-                        Fortunately, it's {{ best_context.amount }}% cheaper than your original pick! You're getting a great deal! Use it as a bargaining chip to get an even better price. ✔️
-                      {% else %}
-                        Unfortunately, it's {{ best_context.amount }}% more expensive than your original pick. But don't lose hope! You can still use it to negotiate a better price for your preferred item. ❌
-                      {% endif %}
-                    </p>
-                </div>
-                  
             </div>
         </div>
     </div>

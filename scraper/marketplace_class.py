@@ -132,6 +132,19 @@ class FacebookMarketplaceScraper:
 
         return image[0]
     
+    def get_listing_currency(self) -> str:
+        """
+        Retrieves the currency of a product listing.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            The currency of the product listing as a string.
+        """
+
+        return self.json_content["offers"]["priceCurrency"]
+    
     def get_listing_date(self) -> tuple[int, int]:
         """
         Retrieves the listing date of a product.

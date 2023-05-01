@@ -22,88 +22,77 @@
             <span class="gradient-text">powerful</span> data analytics, 
             and <span class="gradient-text">captivating</span> visualizations
         </p>
-        <div class="card" style="margin-top: 5rem;">
+
+        <div class="alert {% if best_context.type == 'decrease' %}alert-danger{% else %}alert-success{% endif %}" role="alert" style="margin-top: 5rem;">
+        <h4 class="alert-heading">
+            {% if best_context.type == 'decrease' %}
+            Bad deal! <div class="Stars" style="--rating: {{ price_rating }}" aria-label="Rating of this product is {{ price_rating }} out of 5."></div>
+            {% else %}
+            Good deal! <div class="Stars" style="--rating: {{ price_rating }}" aria-label="Rating of this product is {{ price_rating }} out of 5."></div>
+            {% endif %}
+        </h4>
+        <p>After running our advanced algorithms and crunching the numbers, we have identified <b>{{ best_title }}</b> as the ultimate bargaining chip for you! 
+            With a jaw-dropping match percentage of {{ best_score }}%, it's practically a match made in heaven with your chosen listing. And the cherry on top? 
+            It's currently listed at a steal of a price - just ${{ best_price }} - under the super cool category of {{ best_category }}. 
+            You won't find a better deal anywhere else!
+        </p>
+        <hr>
+        <p>{% if best_context.type == 'decrease' %}
+            Unfortunately, it's {{ best_context.amount }}% cheaper than your original pick! But don't lose hope! You can still use it to negotiate a better price for your preferred item. ❌
+            {% else %}
+            Fortunately, it's {{ best_context.amount }}% more expensive than your original pick. You're getting a great deal! Use it as a bargaining chip to get an even better price. ✔️
+            {% endif %}
+        </p>
+        </div>
+          
+        <div class="card" style="margin-top: 2.5rem;">
+            <div class="card-header">
+                <h4><i class="fas fa-info-circle"></i> Product Information</h4>
+            </div>
             <div class="card-body">
-                <h5 class="card-title">{{ title }} <span class="clickable" data-toggle="collapse" data-target="#infoCollapse"><i class="fas fa-info-circle" id="infoBtn"></i></span></h5>
-                <div class="collapse" style="margin-bottom: 1rem;" id="infoCollapse">
-                    <ul>
-                        <li>Located in {{ city }} 📍</li>
-                        <li>Condition is {{ condition }}</li>
-                        <li>Listed under {{ category }}</li>
-                    </ul>
-                </div>
+                <h5 class="card-title">{{ title }}</h5>
                 
                 <h6 class="card-subtitle mb-2 text-muted">
                     {% if days == 1 and hours == 1 %}
-                        Listed {{ days }} day and {{ hours }} hour ago, for ${{ price }}
+                        Listed {{ days }} day and {{ hours }} hour ago, for ${{ price }} {{ currency }}
                     {% elif days == 1 and hours > 1 %}
-                        Listed {{ days }} day and {{ hours }} hours ago, for ${{ price }}
+                        Listed {{ days }} day and {{ hours }} hours ago, for ${{ price }} {{ currency }}
                     {% elif days > 1 and hours == 1 %}
-                        Listed {{ days }} days and {{ hours }} hour ago, for ${{ price }}
+                        Listed {{ days }} days and {{ hours }} hour ago, for ${{ price }} {{ currency }}
                     {% elif days == 0 and hours == 1 %}
-                        Listed {{ hours }} hour ago, for ${{ price }}
+                        Listed {{ hours }} hour ago, for ${{ price }} {{ currency }}
                     {% elif days == 0 and hours > 1 %}
-                        Listed {{ hours }} hours ago, for ${{ price }}
+                        Listed {{ hours }} hours ago, for ${{ price }} {{ currency }}
                     {% elif days == 1 and hours == 0 %}
-                        Listed {{ days }} day ago, for ${{ price }}
+                        Listed {{ days }} day ago, for ${{ price }} {{ currency }}
                     {% elif days > 1 and hours == 0 %}
-                        Listed {{ days }} days ago, for ${{ price }}
+                        Listed {{ days }} days ago, for ${{ price }} {{ currency }}
                     {% else %}
-                        Listed {{ days }} days and {{ hours }} hours ago, for ${{ price }}
+                        Listed {{ days }} days and {{ hours }} hours ago, for ${{ price }} {{ currency }}
                     {% endif %}
                 </h6>
-                <ul class="nav nav-tabs" id="myTab" role="tablist">
-                    <li class="nav-item">
-                    <a class="nav-link active" id="chart-tab" data-toggle="tab" href="#chart" role="tab" aria-controls="chart" aria-selected="true">Price Trends</a>
-                    </li>
-                    <li class="nav-item">
-                    <a class="nav-link" id="wordcloud-tab" data-toggle="tab" href="#wordcloud" role="tab" aria-controls="wordcloud" aria-selected="false">Website Frequencies</a>
-                    </li>
-                </ul>
-                  
-                <div class="tab-content" id="myTabContent">
-                    <div class="tab-pane fade show active" id="chart" role="tabpanel" aria-labelledby="chart-tab">
-                        <div id="chart-container">
-                            <p style="margin-top: 0.5rem;">
-                                We've gone through {{ total_items }} items with a fine-tooth comb and sorted them into {{ categorized|length }} unique categories, 
-                                each with its own special number from 1 to {{ categorized|length }}. Get ready to discover the ultimate categorization extravaganza! 
-                            </p>
-                            <div id="render-chart" data-chart="{{ chart }}"></div>
-                        </div>
-                    </div>
-                    <div class="tab-pane fade" id="wordcloud" role="tabpanel" aria-labelledby="wordcloud-tab">
-                        <div id="wordcloud-container">
-                            <p style="margin-top: 0.5rem;">
-                                We've gone on a wild goose chase and uncovered {{ website_counts|length }} distinct urls from our search of {{ total_items }} items. 
-                                It looks like the most popular website we came across was <b>{{ max_website }}</b>, with a whopping {{ max_citations }} citations. Now that's some serious internet clout! 
-                            </p>
-                            <div id="render-wordcloud" data-chart="{{ wordcloud }}"></div>
-                        </div>
-                    </div>
-                </div>
+                <p> <br> <i class="fas fa-map-marker-alt"></i> {{ city }} <br> <i class="fas fa-bars"></i> {{ category }} <br> <i class="fas fa-tag"></i> {{ condition }}</p>
+                <p>{{ description|safe }}</p>
+            </div>
+        </div>
 
-                <div class="alert {% if best_context.type == 'decrease' %}alert-success{% else %}alert-danger{% endif %}" role="alert">
-                    <h4 class="alert-heading">
-                        {% if best_context.type == 'decrease' %}
-                            Great news!
-                        {% else %}
-                            Uh oh...
-                        {% endif %}
-                    </h4>
-                    <p>After running our advanced algorithms and crunching the numbers, we have identified <b>{{ best_title }}</b> as the ultimate bargaining chip for you! 
-                        With a jaw-dropping match percentage of {{ best_score }}%, it's practically a match made in heaven with your chosen listing. And the cherry on top? 
-                        It's currently listed at a steal of a price - just ${{ best_price }} - under the super cool category of {{ best_category }}. 
-                        You won't find a better deal anywhere else!
-                    </p>
-                    <hr>
-                    <p>{% if best_context.type == 'decrease' %}
-                        Fortunately, it's {{ best_context.amount }}% cheaper than your original pick! You're getting a great deal! Use it as a bargaining chip to get an even better price. ✔️
-                      {% else %}
-                        Unfortunately, it's {{ best_context.amount }}% more expensive than your original pick. But don't lose hope! You can still use it to negotiate a better price for your preferred item. ❌
-                      {% endif %}
-                    </p>
-                </div>
-                  
+        <div class="card" style="margin-top: 2.5rem;">
+            <div class="card-header">
+                <h4><i class="fas fa-chart-line"></i> Google Shopping Price History</h4>
+            </div>
+            <div class="card-body">
+
+                <div id="render-chart" data-chart="{{ chart }}"></div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 2.5rem; margin-bottom: 2.5rem;">
+            <div class="card-header">
+                <h4><i class="fas fa-globe"></i> Website Frequency</h4>
+            </div>
+            <div class="card-body">
+
+                <div id="render-wordcloud" data-chart="{{ wordcloud }}"></div>
             </div>
         </div>
     </div>

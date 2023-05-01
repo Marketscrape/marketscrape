@@ -243,7 +243,7 @@ class GoogleShoppingScraper:
         urls = []
         similarities = []
 
-        for page_number in range(5):
+        for page_number in range(7):
             start = page_number * 60
             similarity_threshold = 0.25
             self.title = title

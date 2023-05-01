@@ -3,5 +3,4 @@ document.addEventListener("DOMContentLoaded", function () {
     var chartContent = chart.getAttribute('data-chart');
     var chartObject = JSON.parse(chartContent);
     Plotly.newPlot(chart, chartObject);
-    console.log(chartObject)
 });

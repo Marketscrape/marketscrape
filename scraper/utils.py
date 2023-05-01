@@ -5,9 +5,9 @@ import requests
 import re
 import plotly.express as px
 import plotly.graph_objects as go
-import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LinearRegression
 from wordcloud import WordCloud
 from collections import Counter
 
@@ -144,7 +144,7 @@ def percentage_difference(list_price: float, best_price: float) -> dict:
 
     return difference
 
-def create_chart(categorized: dict, similar_prices: list[float], similar_descriptions: list[str]) -> object:
+def create_chart(categorized: dict, similar_prices: list[float], similar_descriptions: list[str], listing_currency: str, listing_title: str) -> object:
     """
     Creates a line chart visualization based on the categorized items, their prices, and their descriptions.
 
@@ -181,15 +181,43 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_descrip
     for i, _ in enumerate(items):
         x = [j*unit + 1 for j in range(len(sorted_prices[i]))]
         hovertext = [f"Product: {desc.title()}<br>Price: ${price:.2f}" for price, desc in zip(sorted_prices[i], sorted_descriptions[i])]
-        fig.add_trace(go.Scatter(x=x, y=sorted_prices[i], mode='markers+lines', hovertemplate="%{text}", text=hovertext, name=f"Category {i + 1}"))
+        fig.add_trace(go.Scatter(
+            x=x, y=sorted_prices[i], 
+            mode='markers', 
+            hovertemplate="%{text}", 
+            text=hovertext, 
+            name=f"Category {i + 1}"))
+
+    # Compute the linear regression on all data points
+    x = np.concatenate([np.arange(len(prices))*unit + 1 for prices in sorted_prices])
+    y = np.concatenate(sorted_prices)
+    reg = LinearRegression().fit(x.reshape(-1, 1), y)
+    x_reg = [np.min(x), np.max(x)*1.5]
+    y_reg = reg.predict(np.array(x_reg).reshape(-1, 1))
+
+    # Add the trend line to the plot
+    fig.add_trace(
+        go.Scatter(x=x_reg, 
+            y=y_reg, 
+            mode='lines', 
+            name='Trend Line'))
+
+    # Add prediction annotation for the trend line
+    prediction = reg.predict([[10]])[0]
+    fig.add_annotation(x=10, y=prediction, text=f"Expected Price: ${prediction:.2f} {listing_currency}", showarrow=True)
         
-    fig.update_layout(template='plotly_white', hovermode='closest', 
-                    yaxis=dict(
-                        tickprefix="$"
-                    ),
-                    xaxis=dict(
-                        tickprefix="Item #"
-                    ))
+    fig.update_layout(
+        template='plotly_white', 
+        hovermode='closest', 
+        xaxis_title="Product", 
+        yaxis_title=f"Price $({listing_currency})", 
+        legend_title="Categories", 
+        title={
+            'text': f"Products Similar to: {listing_title}", 
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'y': 0.9, 
+            'x': 0.5})
     
     return fig.to_json()
 
@@ -216,13 +244,20 @@ def create_wordcloud(urls: list[str]) -> tuple[object, dict]:
     website_counts = Counter(websites)
     wordcloud = WordCloud(
         background_color='white',
-        width=2000,
-        height=1000, 
         scale=4, 
         prefer_horizontal=0.9,
-        colormap='seismic_r').generate_from_frequencies(website_counts)
+        colormap='rainbow').generate_from_frequencies(website_counts)
 
     fig = px.imshow(wordcloud)
+    fig.update_layout(
+        xaxis_title="Website URL",
+        yaxis_title="Citations (Bigger is Better)",
+        title={
+            'text': "Word Cloud of Websites",
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'y': 0.9,
+            'x': 0.5})
 
     return fig.to_json(), dict(website_counts)
 

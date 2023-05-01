@@ -36,11 +36,13 @@ class Index(View):
             image = facebook_instance.get_listing_image()
             days, hours = facebook_instance.get_listing_date()
             description = facebook_instance.get_listing_description()
+            description = description.replace("\n", " <br> ")
             title = facebook_instance.get_listing_title()
             condition = facebook_instance.get_listing_condition()
             category = facebook_instance.get_listing_category()
             price = facebook_instance.get_listing_price()
             city = facebook_instance.get_listing_city()
+            currency = facebook_instance.get_listing_currency()
 
             # Create a GoogleShoppingScraper instance
             shopping_instance = GoogleShoppingScraper()
@@ -55,7 +57,7 @@ class Index(View):
 
             # Categorize the titles and create the chart and wordcloud
             categorized = categorize_titles(similar_descriptions)
-            chart = create_chart(categorized, similar_prices, similar_descriptions)
+            chart = create_chart(categorized, similar_prices, similar_descriptions, currency, title)
             wordcloud, website_counts = create_wordcloud(similar_urls)   
 
             # Based on the best similar product, get the price, description, category, and URL
@@ -92,6 +94,7 @@ class Index(View):
                 'condition': condition,
                 'category': category,
                 'city': city,
+                'currency': currency,
                 'categorized': categorized,
                 'total_items': total_items,
                 'best_price': best_price,

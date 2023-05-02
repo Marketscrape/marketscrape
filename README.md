@@ -1,24 +1,45 @@
-# Marketscrape
+<p align="center">
+  <img width="1152" alt="logo" src="https://user-images.githubusercontent.com/64433812/235738405-51d836e8-6cdc-461d-93aa-e573497dd452.png">
+</p>
+
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Django](https://img.shields.io/badge/django-%23092E20.svg?style=for-the-badge&logo=django&logoColor=white)
+![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
+![Bootstrap](https://img.shields.io/badge/bootstrap-%23563D7C.svg?style=for-the-badge&logo=bootstrap&logoColor=white)
+![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white)
+
+# About
 Marketscrape is a user-friendly web scraper for Facebook Marketplace that utilizes AI to help users assess the value of each listing, and by providing real-time analysis and advanced machine learning algorithms, it empowers users to make informed purchasing decisions and find the best deals on Facebook Marketplace.
 
+# Features
+- Interactive charts for price comparison
+- Save searches for future sessions
+- Analyze Facebook Marketplace listings across millions of products
+- Detailed Analysis report with product recommendations
+
+
 ## Installation
-Clone the repository
+Marketscrape is easiest used with [Visual Studio Code](https://code.visualstudio.com/) in a [Docker](https://www.docker.com/) container using the [Dev Containeres](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension. More information about installation can be found [here](https://code.visualstudio.com/docs/devcontainers/tutorial).
+
+### Clone the repository
 ```bash
 $ https://github.com/Marketscrape/marketscrape.git
 ```
 
-### Local setup using Docker
-- First, install [docker](https://docs.docker.com/get-docker/) and [docker-compose](https://docs.docker.com/compose/install/).
-- Next, run the following command to start the container. 
+### Docker Desktop
+Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-```bash
-$ docker compose up
-```
+### Start Docker
+Run the Docker Desktop application to start Docker
 
-Note that when you run it for the first time, it will download a docker image of size 4.5GB or so.
+### Install the extension
+The Dev Containers extension lets you run Visual Studio Code instide a Docker container
 
-- Finally, when your done running the project run the following command to shut down the containers.
+### Build the Dev Container
+In Visual Studio Code:
+- Command Pallete `(Ctrl + Shift + P)` andselect `Dev Containers: Open Folder in Container...`
+- Select the cloned repository
 
-```bash
-$ docker compose down
-```
+### Run the application
+To run Marketscrape run `python manage.py runserver` in the Dev Container

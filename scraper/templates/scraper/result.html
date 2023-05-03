@@ -24,26 +24,28 @@
         </p>
 
         <div class="alert {% if best_context.type == 'decrease' %}alert-danger{% else %}alert-success{% endif %}" role="alert" style="margin-top: 5rem;">
-        <h4 class="alert-heading">
-            {% if best_context.type == 'decrease' %}
-            Bad deal! <div class="Stars" style="--rating: {{ price_rating }}" aria-label="Rating of this product is {{ price_rating }} out of 5."></div>
-            {% else %}
-            Good deal! <div class="Stars" style="--rating: {{ price_rating }}" aria-label="Rating of this product is {{ price_rating }} out of 5."></div>
-            {% endif %}
-        </h4>
-        <p>After running our advanced algorithms and crunching the numbers, we have identified <b>{{ best_title }}</b> as the ultimate bargaining chip for you! 
-            With a jaw-dropping match percentage of {{ best_score }}%, it's practically a match made in heaven with your chosen listing. And the cherry on top? 
-            It's currently listed at a steal of a price - just ${{ best_price }} - under the super cool category of {{ best_category }}. 
-            You won't find a better deal anywhere else!
-        </p>
-        <hr>
-        <p>{% if best_context.type == 'decrease' %}
-            Unfortunately, it's {{ best_context.amount }}% cheaper than your original pick! But don't lose hope! You can still use it to negotiate a better price for your preferred item. ❌
-            {% else %}
-            Fortunately, it's {{ best_context.amount }}% more expensive than your original pick. You're getting a great deal! Use it as a bargaining chip to get an even better price. ✔️
-            {% endif %}
-        </p>
+            <h4 class="alert-heading">
+                {% if best_context.type == 'decrease' %}
+                    <i class="fas fa-times"></i> Bad deal! <i class="fas fa-times"></i>
+                {% else %}
+                    <i class="fas fa-check"></i> Good deal!
+                {% endif %}
+            </h4>
+            <p>After running our advanced algorithms and crunching the numbers, we have <b>identified {{ best_title }}</b> as the ultimate bargaining chip for you! 
+                With a jaw-dropping <b>match percentage of {{ best_score }}%</b>, it's practically a match made in heaven with your chosen listing. And the cherry on top? 
+                It's currently listed at a steal of a price - <b>just ${{ best_price }}</b> - under the super cool <b>category of {{ best_category }} </b>. 
+                You won't find a better deal anywhere else!
+            </p>
+            <hr>
+            <p>{% if best_context.type == 'decrease' %}
+                    Unfortunately, <b>{{ best_title }} is {{ best_context.amount }}% cheaper</b> than your original pick! But don't lose hope! You can still use it to negotiate a better price for your preferred item.
+                {% else %}
+                    Fortunately, <b>{{ best_title }} is {{ best_context.amount }}% more expensive</b> than your original pick. You're getting a great deal! Use it as a bargaining chip to get an even better price.
+                {% endif %}
+            </p>
         </div>
+
+        <!-- <div class="Stars" style="--rating: {{ price_rating }}" aria-label="Rating of this product is {{ price_rating }} out of 5."></div> -->
           
         <div class="card" style="margin-top: 2.5rem;">
             <div class="card-header">

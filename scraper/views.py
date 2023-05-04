@@ -36,7 +36,6 @@ class Index(View):
             image = facebook_instance.get_listing_image()
             days, hours = facebook_instance.get_listing_date()
             description = facebook_instance.get_listing_description()
-            description = description.replace("\n", " <br> ")
             title = facebook_instance.get_listing_title()
             condition = facebook_instance.get_listing_condition()
             category = facebook_instance.get_listing_category()

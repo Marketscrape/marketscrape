@@ -23,12 +23,14 @@
             and <span class="gradient-text">captivating</span> visualizations
         </p>
 
-        <div class="alert {% if best_context.type == 'decrease' %}alert-danger{% else %}alert-success{% endif %}" role="alert" style="margin-top: 5rem;">
+        <div class="alert {% if best_context.type == 'decrease' and price_rating > 3 %}alert-warning{% elif best_context.type == 'decrease' %}alert-danger{% else %}alert-success{% endif %}" role="alert" style="margin-top: 5rem;">
             <h4 class="alert-heading">
-                {% if best_context.type == 'decrease' %}
-                    <i class="fas fa-times"></i> Bad deal! <i class="fas fa-times"></i>
+                {% if best_context.type == 'decrease' and price_rating > 3 %}
+                    The product is a <div class="Stars" style="--rating: {{ price_rating }}"></div> deal! But we found some better options for you. 
+                {% elif best_context.type == 'decrease'%}
+                    You can do better, we rate it <div class="Stars" style="--rating: {{ price_rating }}"></div>
                 {% else %}
-                    <i class="fas fa-check"></i> Good deal!
+                    You hit the jackpot, it's a <div class="Stars" style="--rating: {{ price_rating }}"></div> deal!
                 {% endif %}
             </h4>
             <p>After running our advanced algorithms and crunching the numbers, we have <b>identified {{ best_title }}</b> as the ultimate bargaining chip for you! 

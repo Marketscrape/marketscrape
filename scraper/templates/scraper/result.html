@@ -75,14 +75,29 @@
                         Listed {{ days }} days and {{ hours }} hours ago, for ${{ price }} {{ currency }}
                     {% endif %}
                 </h6>
-                <p> <br> <i class="fas fa-map-marker-alt"></i> {{ city }} <br> <i class="fas fa-bars"></i> {{ category }} <br> <i class="fas fa-tag"></i> {{ condition }}</p>
-                <p>{{ description|safe }}</p>
+                <p> 
+                    <br> 
+                    <i class="fas fa-map-marker-alt"></i> {{ city }} 
+                    <br> 
+                    <i class="fas fa-bars"></i> {{ category }} 
+                    <br> 
+                    {% if condition != "New" %}
+                        <i class="fas fa-tag"></i> {{ condition }}<sup>*</sup>
+                    {% else %}
+                        <i class="fas fa-tag"></i> {{ condition }}
+                    {% endif %}
+                </p>
+
+                <blockquote class="blockquote p-3" style="background-color: #ffffff; border-left: 5px solid transparent; border-image: linear-gradient(to bottom, #e53935, #1e88e5) 1 100%;">
+                    <p>{{ description }}</p>
+                    <footer class="blockquote-footer"><span></span><i class="fab fa-facebook"></i> Seller</footer>
+                </blockquote>
             </div>
         </div>
 
         <div class="card" style="margin-top: 2.5rem;">
             <div class="card-header">
-                <h4><i class="fas fa-chart-line"></i> Google Shopping Price History</h4>
+                <h4><i class="fas fa-chart-line"></i> Price Trends</h4>
             </div>
             <div class="card-body">
 

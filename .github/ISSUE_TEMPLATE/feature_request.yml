@@ -70,7 +70,7 @@ body:
       I asked on https://stackoverflow.com/.... and the community
       advised me to do X, Y and Z.
   validations:
-    required: true
+    required: false
 
 - type: checkboxes
   attributes:

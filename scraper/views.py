@@ -48,34 +48,33 @@ class Index(View):
 
             # Find viable products based on the title
             cleaned_title = remove_illegal_characters(title)
-            similar_descriptions, similar_prices, similar_urls, similar_scores = shopping_instance.find_viable_product(cleaned_title, ramp_down=0.0)
-            candidates = shopping_instance.construct_candidates(similar_descriptions, similar_prices, similar_urls, similar_scores)
+            similar_descriptions, similar_prices, similar_shipping, similar_urls, similar_scores = shopping_instance.find_viable_product(cleaned_title, ramp_down=0.0)
+            candidates = shopping_instance.construct_candidates(similar_descriptions, similar_prices, similar_shipping, similar_urls, similar_scores)
             
             # Convert prices to float and shorten the descriptions if necessary
             similar_prices = [float(price.replace(',', '')) for price in similar_prices]
 
             # Categorize the titles and create the chart and wordcloud
             categorized = categorize_titles(similar_descriptions)
-            chart = create_chart(categorized, similar_prices, similar_descriptions, currency, title)
-            wordcloud, website_counts = create_wordcloud(similar_urls)   
+            chart = create_chart(categorized, similar_prices, similar_shipping, similar_descriptions, currency, title)
+            wordcloud = create_wordcloud(similar_urls)   
 
             # Based on the best similar product, get the price, description, category, and URL
             best_product = shopping_instance.lowest_price_highest_similarity(candidates)
 
             idx = similar_urls.index(best_product[1]["url"])
             best_price = f"{similar_prices[idx]:,.2f}"
+            best_shipping = similar_shipping[idx]
             best_title = similar_descriptions[idx]
             best_score = best_product[1]["similarity"] * 100
-            best_category = [key for key, value in categorized.items() if [item for item in value if item == best_title]][0]
 
-            # Percetage difference between the listing price and the best found price
-            best_context = percentage_difference(float(price), float(best_price.replace(",", "")))
-            price_rating = price_difference_rating(float(price), float(best_price.replace(",", "")))
+            # Percetage difference between the listing price and the best found price (including shipping)
+            best_total = float(best_price.replace(",", "")) + float(best_shipping.replace(",", ""))
+            best_context = percentage_difference(float(price), best_total,)
+            price_rating = price_difference_rating(float(price), best_total, days)
 
             # Get the total number of items
             total_items = len(similar_descriptions)
-            max_citations = max([value for value in website_counts.values()])
-            max_website = [key for key, value in website_counts.items() if value == max_citations][0]
 
             # Create the context 
             context = {
@@ -97,12 +96,9 @@ class Index(View):
                 'categorized': categorized,
                 'total_items': total_items,
                 'best_price': best_price,
+                'best_shipping': best_shipping,
                 'best_title': best_title.title(),
                 'best_score': round(best_score, 2),
-                'website_counts': website_counts,
-                'max_website': max_website,
-                'max_citations': max_citations,
-                'best_category': best_category,
                 'best_context': best_context
             }
 

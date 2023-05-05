@@ -35,8 +35,13 @@
             </h4>
             <p>After running our advanced algorithms and crunching the numbers, we have <b>identified {{ best_title }}</b> as the ultimate bargaining chip for you! 
                 With a jaw-dropping <b>match percentage of {{ best_score }}%</b>, it's practically a match made in heaven with your chosen listing. And the cherry on top? 
-                It's currently listed at a steal of a price - <b>just ${{ best_price }}</b> - under the super cool <b>category of {{ best_category }} </b>. 
-                You won't find a better deal anywhere else!
+                It's currently listed at a steal of a price - <b>just ${{ best_price }}
+                    {% if best_shipping != "0.00" %} 
+                        with ${{ best_shipping }} in shipping.
+                    {% else %}
+                        with free shipping.
+                    {% endif %}
+                </b>You won't find a better deal anywhere else!
             </p>
             <hr>
             <p>{% if best_context.type == 'decrease' %}
@@ -46,8 +51,6 @@
                 {% endif %}
             </p>
         </div>
-
-        <!-- <div class="Stars" style="--rating: {{ price_rating }}" aria-label="Rating of this product is {{ price_rating }} out of 5."></div> -->
           
         <div class="card" style="margin-top: 2.5rem;">
             <div class="card-header">

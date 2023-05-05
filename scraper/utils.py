@@ -90,7 +90,7 @@ def reject_outliers(data: list[float], m: float) -> list[int]:
 
     return indices.tolist()
 
-def price_difference_rating(initial: float, final: float) -> float:
+def price_difference_rating(initial: float, final: float, days: int) -> float:
     """
     The rating is based on the difference between the initial and final
     price. The rating is 0 if the final price is greater than the initial
@@ -101,16 +101,31 @@ def price_difference_rating(initial: float, final: float) -> float:
     Args:
         initial: The initial price.
         final: The final price.
+        days: The number of days a listing has been active.
 
     Returns:
         The rating.
     """
+    
+    # Decay constant (a value greater than 0)
+    decay_constant = 0.01
+
+    # Adjust this value to control the rate of increase of the penalty
+    linear_factor = 0.0125
+
+    # Threshold number of days after which the penalty is applied
+    threshold_days = 7
+
+    if days >= threshold_days:
+        days_past_threshold = days - threshold_days
+        penalty_amount = initial*np.exp(-decay_constant*days_past_threshold) + linear_factor*days_past_threshold*initial
+        initial += penalty_amount
 
     if initial <= final:
         rating = 5.0
     else:
         price_difference = initial - final
-        rating = 5.0 - (price_difference / initial) * 5.0
+        rating = 5.0 - (price_difference/initial)*5.0
     
     return max(0.0, min(rating, 5.0))
 
@@ -144,7 +159,7 @@ def percentage_difference(list_price: float, best_price: float) -> dict:
 
     return difference
 
-def create_chart(categorized: dict, similar_prices: list[float], similar_descriptions: list[str], listing_currency: str, listing_title: str) -> object:
+def create_chart(categorized: dict, similar_prices: list[float], similar_shipping: list[float], similar_descriptions: list[str], listing_currency: str, listing_title: str) -> object:
     """
     Creates a line chart visualization based on the categorized items, their prices, and their descriptions.
 
@@ -157,30 +172,36 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_descrip
         A JSON string containing the Plotly figure of the line chart.
     """
 
-    items, prices, descriptions = [], [], []
+    items, prices, shipping, descriptions = [], [], [], []
     unit = 1
 
     for categories, titles in categorized.items():
         items.append(categories)
 
-        sub_prices, sub_descriptions = [], []
+        sub_prices, sub_shipping, sub_descriptions = [], [], []
         for title in titles:
             idx = similar_descriptions.index(title)
-            sub_prices.append(similar_prices[idx])
 
+            sub_prices.append(similar_prices[idx])
+            sub_shipping.append(similar_shipping[idx])
             sub_descriptions.append(title)
         prices.append(sub_prices)
+        shipping.append(sub_shipping)
         descriptions.append(sub_descriptions)
     
     sort_indices = [sorted(range(len(sublist)), key=lambda x: sublist[x]) for sublist in prices]
     sorted_prices = [[sublist[i] for i in indices] for sublist, indices in zip(prices, sort_indices)]
+
+    sorted_shipping = [[sublist[i] for i in indices] for sublist, indices in zip(shipping, sort_indices)]
+    formatted_shipping = [[f"${ship}" if ship != "0.00" else "Free" for ship in row] for row in sorted_shipping]
+
     sorted_descriptions = [[sublist[i] for i in indices] for sublist, indices in zip(descriptions, sort_indices)]
 
     fig = go.Figure()
 
     for i, _ in enumerate(items):
         x = [j*unit + 1 for j in range(len(sorted_prices[i]))]
-        hovertext = [f"Product: {desc.title()}<br>Price: ${price:.2f}" for price, desc in zip(sorted_prices[i], sorted_descriptions[i])]
+        hovertext = [f"Product: {desc.title()}<br>Price: ${price:.2f}<br>Shipping: {ship}" for price, ship, desc in zip(sorted_prices[i], formatted_shipping[i], sorted_descriptions[i])]
         fig.add_trace(go.Scatter(
             x=x, y=sorted_prices[i], 
             mode='markers', 
@@ -221,7 +242,7 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_descrip
     
     return fig.to_json()
 
-def create_wordcloud(urls: list[str]) -> tuple[object, dict]:
+def create_wordcloud(urls: list[str]) -> object:
     """
     Creates a word cloud visualization based on a list of website URLs.
 
@@ -251,15 +272,15 @@ def create_wordcloud(urls: list[str]) -> tuple[object, dict]:
     fig = px.imshow(wordcloud)
     fig.update_layout(
         xaxis_title="Website URL",
-        yaxis_title="Citations (Bigger is Better)",
+        yaxis_title="Citations",
         title={
-            'text': "Word Cloud of Websites",
+            'text': "Frequently Cited Websites",
             'xanchor': 'center',
             'yanchor': 'top',
             'y': 0.9,
             'x': 0.5})
 
-    return fig.to_json(), dict(website_counts)
+    return fig.to_json()
 
 def categorize_titles(items: list[str]) -> dict:
     """

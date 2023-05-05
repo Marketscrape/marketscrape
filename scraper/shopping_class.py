@@ -40,7 +40,7 @@ class GoogleShoppingScraper:
 
         return description
 
-    def get_product_price(self) -> np.ndarray:
+    def get_product_price(self) -> list[float]:
         """
         Extracts the price of each product from the HTML.
 
@@ -63,6 +63,29 @@ class GoogleShoppingScraper:
         normalized = [float(price.replace(",", "")) for price in normalized]
 
         return normalized
+    
+    def get_product_shipping(self) -> list[float]:
+        """
+        Extracts the shipping cost of each product from the HTML.
+
+        Args:
+            soup: The HTML to extract the shipping cost from.
+            
+        Returns:
+            The shipping cost of each product. The shipping cost is represented as a
+            NumPy array.
+        """
+
+        shipping = self.soup.find_all("span", {"class": "dD8iuc"})
+        
+        values = []
+        for ship in shipping:
+            values.append(ship.text)
+        
+        cleansed = [re.search(r"([0-9]+\.[0-9]+)|(Free)", ship).group(0) for ship in values]
+        cleansed = [float(ship) if ship != "Free" else 0.0 for ship in cleansed]
+
+        return cleansed
 
     def get_product_url(self) -> str:
         """
@@ -113,7 +136,7 @@ class GoogleShoppingScraper:
 
         return similarity
     
-    def remove_outliers(self, titles: list[str], prices: list[float], urls: list[str]) -> tuple[list[str], list[float], list[str]]:
+    def remove_outliers(self, titles: list[str], prices: list[float], shipping: list[float], urls: list[str]) -> tuple[list[str], list[float], list[float], list[str]]:
         """
         Removes outliers from a set of data consisting of titles, prices, and URLs.
 
@@ -130,9 +153,10 @@ class GoogleShoppingScraper:
 
         titles = [title for i, title in enumerate(titles) if i not in outlier_indices]
         prices = [price for i, price in enumerate(prices) if i not in outlier_indices]
+        shipping = [ship for i, ship in enumerate(shipping) if i not in outlier_indices]
         urls = [url for i, url in enumerate(urls) if i not in outlier_indices]
 
-        return titles, prices, urls
+        return titles, prices, shipping, urls
 
     def get_product_info(self):
         """
@@ -153,15 +177,17 @@ class GoogleShoppingScraper:
 
         titles = self.get_product_title()
         prices = self.get_product_price()
+        shipping = self.get_product_shipping()
         urls = self.get_product_url()
 
-        titles, prices, urls = self.remove_outliers(titles, prices, urls)
+        titles, prices, shipping, urls = self.remove_outliers(titles, prices, shipping, urls)
 
         product_info = []
-        for title, price, url in zip(titles, prices, urls):
+        for title, price, ship, url in zip(titles, prices, shipping, urls):
             product_info.append({
                 'title': clean_text(title.text.lower()),
                 'price': price,
+                'shipping': ship,
                 'url': url
             })
 
@@ -199,7 +225,7 @@ class GoogleShoppingScraper:
 
         return min_price_item
         
-    def construct_candidates(self, descriptions, prices, urls, similarities):
+    def construct_candidates(self, descriptions, prices, shipping, urls, similarities):
         """
         Constructs a list of candidates from the descriptions, prices, and
         urls.
@@ -217,6 +243,7 @@ class GoogleShoppingScraper:
         for i in range(len(descriptions)):
             candidates[descriptions[i]] = {
                 "price": prices[i],
+                "shipping": shipping[i],
                 "url": urls[i],
                 "similarity": similarities[i]
             }
@@ -240,6 +267,7 @@ class GoogleShoppingScraper:
 
         descriptions = []
         prices = []
+        shipping = []
         urls = []
         similarities = []
 
@@ -265,14 +293,15 @@ class GoogleShoppingScraper:
                     if filtered_prices_descriptions:
                         consecutively_empty = 0
                     else:
-                        consecutively_empty +=1
+                        consecutively_empty += 1
 
             descriptions += list(filtered_prices_descriptions.keys())
             prices += [f"{product['price']:,.2f}" for product in filtered_prices_descriptions.values()]
+            shipping += [f"{product['shipping']:,.2f}" for product in filtered_prices_descriptions.values()]
             urls += [product['url'] for product in filtered_prices_descriptions.values()]
             similarities += [product['similarity'] for product in filtered_prices_descriptions.values()]
 
-        return descriptions, prices, urls, similarities
+        return descriptions, prices, shipping, urls, similarities
 
     def filter_products_by_similarity(self, product_info: list, target_title: str, similarity_threshold: float):
         """
@@ -296,6 +325,7 @@ class GoogleShoppingScraper:
                 if similarity >= similarity_threshold:
                     filtered_products[product['title']] = {
                         'price': product['price'],
+                        'shipping': product['shipping'],
                         'url': product['url'],
                         'similarity': similarity
                     }

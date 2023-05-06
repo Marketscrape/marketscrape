@@ -2,7 +2,7 @@ from .utils import *
 from difflib import SequenceMatcher
 import string
 
-class GoogleShoppingScraper:
+class EbayScraper:
     def __init__(self):
         self.title = None 
         self.start = None
@@ -10,7 +10,7 @@ class GoogleShoppingScraper:
 
     def create_url(self):
         """
-        Creates a URL to search for a product on Google Shopping and retrieves the corresponding page using BeautifulSoup.
+        Creates a URL to search for a product on Ebay and retrieves the corresponding page using BeautifulSoup.
 
         Args:
             self: The instance of the class.
@@ -19,9 +19,10 @@ class GoogleShoppingScraper:
             None
         """
 
-        url = f"https://www.google.com/search?q={self.title}&tbs=vw:d&tbm=shop&sxsrf=APwXEdeCneQw6hWKHlHMJptjJHcIzqvmvw:1682209446957&ei=pnpEZILiOcmD0PEPifacgAw&start={self.start}&sa=N&ved=0ahUKEwiCzZfE3r7-AhXJATQIHQk7B8AQ8tMDCLEY&biw=1920&bih=927&dpr=1"
+        url = f"https://www.ebay.com/sch/i.html?_from=R40&_nkw={self.title}&_sacat=0&_ipg=240&_pgn={self.start}"
         headers = { 
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582",
+            "Referer": "https://www.google.com/"
         }
         self.soup = create_soup(url, headers)
 
@@ -36,7 +37,7 @@ class GoogleShoppingScraper:
             The product description
         """
 
-        description = self.soup.find_all("div", {"class": "rgHvZc"})
+        description = self.soup.find_all('div', class_='s-item__title')
 
         return description
 
@@ -52,17 +53,17 @@ class GoogleShoppingScraper:
             NumPy array.
         """
 
-        prices = self.soup.find_all("span", {"class": "HRLxBb"})
+        prices = self.soup.find_all('span', class_='s-item__price')
 
         values = []
         for price in prices:
             values.append(price.text)
 
-        normalized = [re.sub("\$", "", price) for price in values]
-        normalized = [re.search(r"[0-9,.]*", price).group(0) for price in normalized]
-        normalized = [float(price.replace(",", "")) for price in normalized]
+        cleansed = [re.search(r"([0-9]+\.[0-9]+)|([0-9]+,[0-9]+)", price).group(0) for price in values]
+        cleansed = [price.replace(",", "") for price in cleansed]
+        cleansed = [float(price) for price in cleansed]
 
-        return normalized
+        return cleansed
     
     def get_product_shipping(self) -> list[float]:
         """
@@ -76,34 +77,33 @@ class GoogleShoppingScraper:
             NumPy array.
         """
 
-        shipping = self.soup.find_all("span", {"class": "dD8iuc"})
-        
+        shipping = self.soup.find_all('span', class_='s-item__shipping s-item__logisticsCost')
+
         values = []
         for ship in shipping:
             values.append(ship.text)
         
-        cleansed = [re.search(r"([0-9]+\.[0-9]+)|(Free)", ship).group(0) for ship in values]
-        cleansed = [float(ship) if ship != "Free" else 0.0 for ship in cleansed]
+        cleansed = [re.search(r"([0-9]+\.[0-9]+)|(Free)|(not specified)", ship).group(0) for ship in values]
+        cleansed = [float(ship) if ship not in ["Free", "not specified"] else 0.0 for ship in cleansed]
 
         return cleansed
 
-    def get_product_url(self) -> str:
+    def get_product_country(self) -> str:
         """
-        Returns the product URL in the soup.
+        Returns the product country in the soup.
 
         Args:
             soup: a BeautifulSoup object containing a product page
 
         Returns:
-            The product URL
+            The product country
         """
 
-        urls = self.soup.find_all("div", {"class": "rgHvZc"})
+        countries = self.soup.find_all('span', class_='s-item__location s-item__itemLocation')
 
         values = []
-        for url in urls:
-            link = url.find('a', href=True)
-            result = link['href'].replace('/url?url=', '')
+        for country in countries:
+            result = country.text.replace("from ", "")
             values.append(result)
 
         return values
@@ -136,28 +136,28 @@ class GoogleShoppingScraper:
 
         return similarity
     
-    def remove_outliers(self, titles: list[str], prices: list[float], shipping: list[float], urls: list[str]) -> tuple[list[str], list[float], list[float], list[str]]:
+    def remove_outliers(self, titles: list[str], prices: list[float], shipping: list[float], countries: list[str]) -> tuple[list[str], list[float], list[float], list[str]]:
         """
-        Removes outliers from a set of data consisting of titles, prices, and URLs.
+        Removes outliers from a set of data consisting of titles, prices, and countries.
 
         Args:
             titles (list[str]): A list of titles of the items.
             prices (list[float]): A list of prices of the items.
             shipping (list[float]): A list of shipping costs of the items.
-            urls (list[str]): A list of URLs of the items.
+            countries (list[str]): A list of countries of the items.
 
         Returns:
-            A tuple of three lists: (1) titles with outliers removed, (2) prices with outliers removed, and (3) URLs with outliers removed.
+            A tuple of three lists: (1) titles with outliers removed, (2) prices with outliers removed, and (3) countries with outliers removed.
         """
 
-        outlier_indices = reject_outliers(np.array(prices), 1.25)
+        outlier_indices = reject_outliers(np.array(prices), m=1.5)
 
         titles = [title for i, title in enumerate(titles) if i not in outlier_indices]
         prices = [price for i, price in enumerate(prices) if i not in outlier_indices]
         shipping = [ship for i, ship in enumerate(shipping) if i not in outlier_indices]
-        urls = [url for i, url in enumerate(urls) if i not in outlier_indices]
+        countries = [country for i, country in enumerate(countries) if i not in outlier_indices]
 
-        return titles, prices, shipping, urls
+        return titles, prices, shipping, countries
 
     def get_product_info(self):
         """
@@ -167,7 +167,7 @@ class GoogleShoppingScraper:
             - title: The title of the product.
             - description: The description of the product.
             - price: The price of the product.
-            - url: The URL of the product.
+            - country: The country of the product.
 
         Args:
             soup (BeautifulSoup): The parsed HTML of the page.
@@ -179,17 +179,17 @@ class GoogleShoppingScraper:
         titles = self.get_product_title()
         prices = self.get_product_price()
         shipping = self.get_product_shipping()
-        urls = self.get_product_url()
+        countries = self.get_product_country()
 
-        titles, prices, shipping, urls = self.remove_outliers(titles, prices, shipping, urls)
+        titles, prices, shipping, countries = self.remove_outliers(titles, prices, shipping, countries)
 
         product_info = []
-        for title, price, ship, url in zip(titles, prices, shipping, urls):
+        for title, price, ship, country in zip(titles, prices, shipping, countries):
             product_info.append({
                 'title': clean_text(title.text.lower()),
                 'price': price,
                 'shipping': ship,
-                'url': url
+                'country': country
             })
 
         return product_info
@@ -226,16 +226,16 @@ class GoogleShoppingScraper:
 
         return min_price_item
         
-    def construct_candidates(self, descriptions, prices, shipping, urls, similarities):
+    def construct_candidates(self, descriptions, prices, shipping, countries, similarities):
         """
         Constructs a list of candidates from the descriptions, prices, and
-        urls.
+        countries.
 
         Args:
             descriptions: The descriptions of the products.
             prices: The prices of the products.
             shipping: The shipping costs of the products.
-            urls: The urls of the products.
+            countries: The countries of the products.
 
         Returns:
             The list of candidates.
@@ -246,7 +246,7 @@ class GoogleShoppingScraper:
             candidates[descriptions[i]] = {
                 "price": prices[i],
                 "shipping": shipping[i],
-                "url": urls[i],
+                "country": countries[i],
                 "similarity": similarities[i]
             }
 
@@ -256,7 +256,7 @@ class GoogleShoppingScraper:
         """
         Finds viable products based on the title of the Marketplace listing,
         and utilizes the ramp down of the previous product in the sequence, to 
-        find the descriptions, prices, and urls of the prices of the product.
+        find the descriptions, prices, and countries of the prices of the product.
 
         Args:
             title: The title of the product.
@@ -264,20 +264,19 @@ class GoogleShoppingScraper:
                 sequence.
 
         Returns:
-            The descriptions, prices and urls the viable products.
+            The descriptions, prices and countries the viable products.
         """
 
         descriptions = []
         prices = []
         shipping = []
-        urls = []
+        countries = []
         similarities = []
 
-        for page_number in range(7):
-            start = page_number * 60
-            similarity_threshold = 0.25
+        for page_number in range(5):
+            similarity_threshold = 0.35
             self.title = title
-            self.start = start
+            self.start = page_number
             self.create_url()
 
             try:
@@ -289,7 +288,7 @@ class GoogleShoppingScraper:
                 while not filtered_prices_descriptions:
                     ramp_down += 0.05
                     filtered_prices_descriptions = self.listing_product_similarity(title, similarity_threshold - ramp_down)
-                    if consecutively_empty == 5:
+                    if consecutively_empty == 2:
                         break 
 
                     if filtered_prices_descriptions:
@@ -300,10 +299,10 @@ class GoogleShoppingScraper:
             descriptions += list(filtered_prices_descriptions.keys())
             prices += [f"{product['price']:,.2f}" for product in filtered_prices_descriptions.values()]
             shipping += [f"{product['shipping']:,.2f}" for product in filtered_prices_descriptions.values()]
-            urls += [product['url'] for product in filtered_prices_descriptions.values()]
+            countries += [product['country'] for product in filtered_prices_descriptions.values()]
             similarities += [product['similarity'] for product in filtered_prices_descriptions.values()]
 
-        return descriptions, prices, shipping, urls, similarities
+        return descriptions, prices, shipping, countries, similarities
 
     def filter_products_by_similarity(self, product_info: list, target_title: str, similarity_threshold: float):
         """
@@ -328,7 +327,7 @@ class GoogleShoppingScraper:
                     filtered_products[product['title']] = {
                         'price': product['price'],
                         'shipping': product['shipping'],
-                        'url': product['url'],
+                        'country': product['country'],
                         'similarity': similarity
                     }
             except InvalidSimilarityThreshold:

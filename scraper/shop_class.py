@@ -49,8 +49,7 @@ class EbayScraper:
             soup: The HTML to extract the price from.
             
         Returns:
-            The price of each product. The price is represented as a
-            NumPy array.
+            The price of each product. 
         """
 
         prices = self.soup.find_all('span', class_='s-item__price')
@@ -65,6 +64,25 @@ class EbayScraper:
 
         return cleansed
     
+    def get_product_condition(self) -> list[str]:
+        """
+        Extracts the conditions of each product from the HTML
+
+        Args:
+            soup: The HTML to extract the condition from.
+
+        Returns:
+            The condition of each product. The conditions is represented as a
+        """
+
+        conditions = self.soup.find_all('span', class_='SECONDARY_INFO')
+
+        values = []
+        for condition in conditions:
+            values.append(condition.text)
+
+        return values
+    
     def get_product_shipping(self) -> list[float]:
         """
         Extracts the shipping cost of each product from the HTML.
@@ -73,8 +91,7 @@ class EbayScraper:
             soup: The HTML to extract the shipping cost from.
             
         Returns:
-            The shipping cost of each product. The shipping cost is represented as a
-            NumPy array.
+            The shipping cost of each product.
         """
 
         shipping = self.soup.find_all('span', class_='s-item__shipping s-item__logisticsCost')
@@ -136,7 +153,7 @@ class EbayScraper:
 
         return similarity
     
-    def remove_outliers(self, titles: list[str], prices: list[float], shipping: list[float], countries: list[str]) -> tuple[list[str], list[float], list[float], list[str]]:
+    def remove_outliers(self, titles: list[str], prices: list[float], shipping: list[float], countries: list[str], conditions: list[str]) -> tuple[list[str], list[float], list[float], list[str]]:
         """
         Removes outliers from a set of data consisting of titles, prices, and countries.
 
@@ -160,8 +177,9 @@ class EbayScraper:
             prices = [price for i, price in enumerate(prices) if i not in outlier_indices]
             shipping = [ship for i, ship in enumerate(shipping) if i not in outlier_indices]
             countries = [country for i, country in enumerate(countries) if i not in outlier_indices]
+            conditions = [condition for i, condition in enumerate(conditions) if i not in outlier_indices]
 
-        return titles, prices, shipping, countries
+        return titles, prices, shipping, countries, conditions
 
     def get_product_info(self):
         """
@@ -184,16 +202,18 @@ class EbayScraper:
         prices = self.get_product_price()
         shipping = self.get_product_shipping()
         countries = self.get_product_country()
+        conditions = self.get_product_condition()
 
-        titles, prices, shipping, countries = self.remove_outliers(titles, prices, shipping, countries)
+        titles, prices, shipping, countries, conditions = self.remove_outliers(titles, prices, shipping, countries, conditions)
 
         product_info = []
-        for title, price, ship, country in zip(titles, prices, shipping, countries):
+        for title, price, ship, country, condition in zip(titles, prices, shipping, countries, conditions):
             product_info.append({
                 'title': clean_text(title.text.lower()),
                 'price': price,
                 'shipping': ship,
-                'country': country
+                'country': country,
+                'condition': condition
             })
 
         return product_info
@@ -230,7 +250,7 @@ class EbayScraper:
 
         return min_price_item
         
-    def construct_candidates(self, descriptions, prices, shipping, countries, similarities):
+    def construct_candidates(self, descriptions, prices, shipping, countries, conditions, similarities):
         """
         Constructs a list of candidates from the descriptions, prices, and
         countries.
@@ -251,6 +271,7 @@ class EbayScraper:
                 "price": prices[i],
                 "shipping": shipping[i],
                 "country": countries[i],
+                "condition": conditions[i],
                 "similarity": similarities[i]
             }
 
@@ -275,6 +296,7 @@ class EbayScraper:
         prices = []
         shipping = []
         countries = []
+        conditions = []
         similarities = []
 
         for page_number in range(5):
@@ -304,9 +326,10 @@ class EbayScraper:
             prices += [f"{product['price']:,.2f}" for product in filtered_prices_descriptions.values()]
             shipping += [f"{product['shipping']:,.2f}" for product in filtered_prices_descriptions.values()]
             countries += [product['country'] for product in filtered_prices_descriptions.values()]
+            conditions += [product['condition'] for product in filtered_prices_descriptions.values()]
             similarities += [product['similarity'] for product in filtered_prices_descriptions.values()]
 
-        return descriptions, prices, shipping, countries, similarities
+        return descriptions, prices, shipping, countries, conditions, similarities
 
     def filter_products_by_similarity(self, product_info: list, target_title: str, similarity_threshold: float):
         """
@@ -332,6 +355,7 @@ class EbayScraper:
                         'price': product['price'],
                         'shipping': product['shipping'],
                         'country': product['country'],
+                        'condition': product['condition'],
                         'similarity': similarity
                     }
             except InvalidSimilarityThreshold:

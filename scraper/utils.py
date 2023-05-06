@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 from wordcloud import WordCloud
 from collections import Counter
 
@@ -90,7 +91,7 @@ def reject_outliers(data: list[float], m: float) -> list[int]:
 
     return indices.tolist()
 
-def price_difference_rating(initial: float, final: float) -> float:
+def price_difference_rating(initial: float, final: float, days: int) -> float:
     """
     The rating is based on the difference between the initial and final
     price. The rating is 0 if the final price is greater than the initial
@@ -101,16 +102,31 @@ def price_difference_rating(initial: float, final: float) -> float:
     Args:
         initial: The initial price.
         final: The final price.
+        days: The number of days a listing has been active.
 
     Returns:
         The rating.
     """
+    
+    # Decay constant (a value greater than 0)
+    decay_constant = 0.01
+
+    # Adjust this value to control the rate of increase of the penalty
+    linear_factor = 0.0125
+
+    # Threshold number of days after which the penalty is applied
+    threshold_days = 7
+
+    if days >= threshold_days:
+        days_past_threshold = days - threshold_days
+        penalty_amount = initial*np.exp(-decay_constant*days_past_threshold) + linear_factor*days_past_threshold*initial
+        initial += penalty_amount
 
     if initial <= final:
         rating = 5.0
     else:
         price_difference = initial - final
-        rating = 5.0 - (price_difference / initial) * 5.0
+        rating = 5.0 - (price_difference/initial)*5.0
     
     return max(0.0, min(rating, 5.0))
 
@@ -144,43 +160,50 @@ def percentage_difference(list_price: float, best_price: float) -> dict:
 
     return difference
 
-def create_chart(categorized: dict, similar_prices: list[float], similar_descriptions: list[str], listing_currency: str, listing_title: str) -> object:
+def create_chart(categorized: dict, similar_prices: list[float], similar_shipping: list[float], similar_descriptions: list[str], listing_currency: str, listing_title: str) -> object:
     """
     Creates a line chart visualization based on the categorized items, their prices, and their descriptions.
 
     Args:
         categorized (dict): A dictionary where the keys are the names of the clusters and the values are lists of the items in that cluster.
         similar_prices (list[float]): A list of prices of the items.
+        similar_shipping (list[float]): A list of shipping costs of the items.
         similar_descriptions (list[str]): A list of descriptions of the items.
 
     Returns:
         A JSON string containing the Plotly figure of the line chart.
     """
 
-    items, prices, descriptions = [], [], []
+    items, prices, shipping, descriptions = [], [], [], []
     unit = 1
 
     for categories, titles in categorized.items():
         items.append(categories)
 
-        sub_prices, sub_descriptions = [], []
+        sub_prices, sub_shipping, sub_descriptions = [], [], []
         for title in titles:
             idx = similar_descriptions.index(title)
-            sub_prices.append(similar_prices[idx])
 
+            sub_prices.append(similar_prices[idx])
+            sub_shipping.append(similar_shipping[idx])
             sub_descriptions.append(title)
         prices.append(sub_prices)
+        shipping.append(sub_shipping)
         descriptions.append(sub_descriptions)
     
     sort_indices = [sorted(range(len(sublist)), key=lambda x: sublist[x]) for sublist in prices]
     sorted_prices = [[sublist[i] for i in indices] for sublist, indices in zip(prices, sort_indices)]
+
+    sorted_shipping = [[sublist[i] for i in indices] for sublist, indices in zip(shipping, sort_indices)]
+    formatted_shipping = [[f"${ship}" if ship != "0.00" else "Free" for ship in row] for row in sorted_shipping]
+
     sorted_descriptions = [[sublist[i] for i in indices] for sublist, indices in zip(descriptions, sort_indices)]
 
     fig = go.Figure()
 
     for i, _ in enumerate(items):
         x = [j*unit + 1 for j in range(len(sorted_prices[i]))]
-        hovertext = [f"Product: {desc.title()}<br>Price: ${price:.2f}" for price, desc in zip(sorted_prices[i], sorted_descriptions[i])]
+        hovertext = [f"Product: {desc.title()}<br>Price: ${price:.2f}<br>Shipping: {ship}" for price, ship, desc in zip(sorted_prices[i], formatted_shipping[i], sorted_descriptions[i])]
         fig.add_trace(go.Scatter(
             x=x, y=sorted_prices[i], 
             mode='markers', 
@@ -188,12 +211,17 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_descrip
             text=hovertext, 
             name=f"Category {i + 1}"))
 
-    # Compute the linear regression on all data points
+    # Compute the polynomial regression on all data points
     x = np.concatenate([np.arange(len(prices))*unit + 1 for prices in sorted_prices])
     y = np.concatenate(sorted_prices)
-    reg = LinearRegression().fit(x.reshape(-1, 1), y)
-    x_reg = [np.min(x), np.max(x)*1.5]
-    y_reg = reg.predict(np.array(x_reg).reshape(-1, 1))
+
+    poly_features = PolynomialFeatures(degree=4, include_bias=True)
+    x_poly = poly_features.fit_transform(x.reshape(-1, 1))
+
+    reg = LinearRegression().fit(x_poly, y)
+    x_reg = np.linspace(np.min(x), np.max(x), num=100)
+    x_reg_poly = poly_features.fit_transform(x_reg.reshape(-1, 1))
+    y_reg = reg.predict(x_reg_poly)
 
     # Add the trend line to the plot
     fig.add_trace(
@@ -202,14 +230,15 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_descrip
             mode='lines', 
             name='Trend Line'))
 
-    # Add prediction annotation for the trend line
-    prediction = reg.predict([[10]])[0]
-    fig.add_annotation(x=10, y=prediction, text=f"Expected Price: ${prediction:.2f} {listing_currency}", showarrow=True)
-        
+    # Add annotations to all x values
+    for x_val in x:
+        y_val = reg.predict(poly_features.transform([[x_val]]))[0]
+        fig.add_annotation(x=x_val, y=y_val, text=f"Prediction: ${y_val:.2f}", showarrow=True)
+            
     fig.update_layout(
         template='plotly_white', 
         hovermode='closest', 
-        xaxis_title="Product", 
+        xaxis_title="Product Number", 
         yaxis_title=f"Price $({listing_currency})", 
         legend_title="Categories", 
         title={
@@ -221,7 +250,7 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_descrip
     
     return fig.to_json()
 
-def create_wordcloud(urls: list[str]) -> tuple[object, dict]:
+def create_wordcloud(urls: list[str]) -> object:
     """
     Creates a word cloud visualization based on a list of website URLs.
 
@@ -251,15 +280,15 @@ def create_wordcloud(urls: list[str]) -> tuple[object, dict]:
     fig = px.imshow(wordcloud)
     fig.update_layout(
         xaxis_title="Website URL",
-        yaxis_title="Citations (Bigger is Better)",
+        yaxis_title="Citations",
         title={
-            'text': "Word Cloud of Websites",
+            'text': "Frequently Cited Websites",
             'xanchor': 'center',
             'yanchor': 'top',
             'y': 0.9,
             'x': 0.5})
 
-    return fig.to_json(), dict(website_counts)
+    return fig.to_json()
 
 def categorize_titles(items: list[str]) -> dict:
     """
@@ -275,20 +304,21 @@ def categorize_titles(items: list[str]) -> dict:
     vectorizer = TfidfVectorizer()
     X = vectorizer.fit_transform(items)
 
-    num_clusters = len(items) // 5
-    kmeans = KMeans(n_clusters=num_clusters, n_init=10)
+    wcss = []
+    for i in range(1, len(items)//2):
+        kmeans = KMeans(n_clusters=i, n_init=10)
+        kmeans.fit(X)
+        wcss.append(kmeans.inertia_)
+
+    # Select the optimal number of clusters based on the elbow point
+    optimal_num_clusters = int(min(wcss))
+    kmeans = KMeans(n_clusters=optimal_num_clusters, n_init=10)
     kmeans.fit(X)
 
-    cluster_names = []
-    for i in range(num_clusters):
-        cluster_items = [items[j] for j in range(len(items)) if kmeans.labels_[j] == i]
-        representative_item = f"{i+1}"
-        cluster_names.append(representative_item)
-
     clusters = {}
-    for i in range(num_clusters):
+    for i in range(optimal_num_clusters):
         cluster_items = [items[j] for j in range(len(items)) if kmeans.labels_[j] == i]
-        cluster_name = cluster_names[i]
-        clusters[cluster_name] = cluster_items
+        representative_item = f"{i + 1}"
+        clusters[representative_item] = cluster_items
 
     return clusters

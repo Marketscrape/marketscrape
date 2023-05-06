@@ -3,11 +3,9 @@ from .exceptions import *
 import numpy as np
 import requests
 import re
-import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
-from wordcloud import WordCloud
 from collections import Counter
 
 def remove_illegal_characters(title: str) -> str:
@@ -244,27 +242,42 @@ def create_chart(similar_prices: list[float], similar_shipping: list[float], sim
         
     return fig.to_json()
 
-def create_wordcloud(urls: list[str]) -> object:
+def create_bargraph(countries: list[str]) -> object:
     """
-    Creates a word cloud visualization based on a list of website URLs.
+    Creates a word cloud visualization based on a list of countries.
 
     Args:
-        urls (list[str]): A list of website URLs to be used to generate the word cloud.
+        countries (list[str]): A list of countries to be used to generate the word cloud.
 
     Returns:
-        A tuple of the following:
-        - A JSON string containing the Plotly Express figure of the word cloud.
-        - A dictionary where the keys are the website names and the values are the frequency count of each website in the URLs list.
+        A JSON string containing the Plotly Express figure of the word cloud.
     """
 
-    website_counts = Counter(urls)
-    wordcloud = WordCloud(
-        background_color='white',
-        scale=4, 
-        prefer_horizontal=0.9,
-        colormap='RdYlGn_r').generate_from_frequencies(website_counts)
-
-    fig = px.imshow(wordcloud)
+    # Count the occurrences of each country
+    country_counts = Counter(countries)
+    
+    # Get the names and counts of the countries
+    country_names = list(country_counts.keys())
+    country_values = list(country_counts.values())
+    
+    # Create a bar graph with the country names on the x-axis and counts on the y-axis
+    fig = go.Figure(
+        go.Bar(
+            x=country_names,
+            y=country_values,
+            hoverinfo='text',
+            hovertext=[f"Country: {country}<br>Citations: {count}" for country, count in zip(country_names, country_values)],
+            marker=dict(
+                color=country_values,
+                colorscale='RdYlGn_r',
+                showscale=True,
+                colorbar=dict(
+                    title='Citations'
+                )
+            )
+        )
+    )
+    
     fig.update_layout(
         xaxis_title="Country of Origin",
         yaxis_title="Citations",
@@ -273,6 +286,8 @@ def create_wordcloud(urls: list[str]) -> object:
             'xanchor': 'center',
             'yanchor': 'top',
             'y': 0.9,
-            'x': 0.5})
+            'x': 0.5},
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
 
     return fig.to_json()

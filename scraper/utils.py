@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 from wordcloud import WordCloud
 from collections import Counter
 
@@ -166,6 +167,7 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_shippin
     Args:
         categorized (dict): A dictionary where the keys are the names of the clusters and the values are lists of the items in that cluster.
         similar_prices (list[float]): A list of prices of the items.
+        similar_shipping (list[float]): A list of shipping costs of the items.
         similar_descriptions (list[str]): A list of descriptions of the items.
 
     Returns:
@@ -209,12 +211,17 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_shippin
             text=hovertext, 
             name=f"Category {i + 1}"))
 
-    # Compute the linear regression on all data points
+    # Compute the polynomial regression on all data points
     x = np.concatenate([np.arange(len(prices))*unit + 1 for prices in sorted_prices])
     y = np.concatenate(sorted_prices)
-    reg = LinearRegression().fit(x.reshape(-1, 1), y)
-    x_reg = [np.min(x), np.max(x)*1.5]
-    y_reg = reg.predict(np.array(x_reg).reshape(-1, 1))
+
+    poly_features = PolynomialFeatures(degree=4, include_bias=True)
+    x_poly = poly_features.fit_transform(x.reshape(-1, 1))
+
+    reg = LinearRegression().fit(x_poly, y)
+    x_reg = np.linspace(np.min(x), np.max(x), num=100)
+    x_reg_poly = poly_features.fit_transform(x_reg.reshape(-1, 1))
+    y_reg = reg.predict(x_reg_poly)
 
     # Add the trend line to the plot
     fig.add_trace(
@@ -223,14 +230,15 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_shippin
             mode='lines', 
             name='Trend Line'))
 
-    # Add prediction annotation for the trend line
-    prediction = reg.predict([[10]])[0]
-    fig.add_annotation(x=10, y=prediction, text=f"Expected Price: ${prediction:.2f} {listing_currency}", showarrow=True)
-        
+    # Add annotations to all x values
+    for x_val in x:
+        y_val = reg.predict(poly_features.transform([[x_val]]))[0]
+        fig.add_annotation(x=x_val, y=y_val, text=f"Prediction: ${y_val:.2f}", showarrow=True)
+            
     fig.update_layout(
         template='plotly_white', 
         hovermode='closest', 
-        xaxis_title="Product", 
+        xaxis_title="Product Number", 
         yaxis_title=f"Price $({listing_currency})", 
         legend_title="Categories", 
         title={
@@ -296,20 +304,21 @@ def categorize_titles(items: list[str]) -> dict:
     vectorizer = TfidfVectorizer()
     X = vectorizer.fit_transform(items)
 
-    num_clusters = len(items) // 5
-    kmeans = KMeans(n_clusters=num_clusters, n_init=10)
+    wcss = []
+    for i in range(1, len(items)//2):
+        kmeans = KMeans(n_clusters=i, n_init=10)
+        kmeans.fit(X)
+        wcss.append(kmeans.inertia_)
+
+    # Select the optimal number of clusters based on the elbow point
+    optimal_num_clusters = int(min(wcss))
+    kmeans = KMeans(n_clusters=optimal_num_clusters, n_init=10)
     kmeans.fit(X)
 
-    cluster_names = []
-    for i in range(num_clusters):
-        cluster_items = [items[j] for j in range(len(items)) if kmeans.labels_[j] == i]
-        representative_item = f"{i+1}"
-        cluster_names.append(representative_item)
-
     clusters = {}
-    for i in range(num_clusters):
+    for i in range(optimal_num_clusters):
         cluster_items = [items[j] for j in range(len(items)) if kmeans.labels_[j] == i]
-        cluster_name = cluster_names[i]
-        clusters[cluster_name] = cluster_items
+        representative_item = f"{i + 1}"
+        clusters[representative_item] = cluster_items
 
     return clusters

@@ -143,6 +143,7 @@ class GoogleShoppingScraper:
         Args:
             titles (list[str]): A list of titles of the items.
             prices (list[float]): A list of prices of the items.
+            shipping (list[float]): A list of shipping costs of the items.
             urls (list[str]): A list of URLs of the items.
 
         Returns:
@@ -233,6 +234,7 @@ class GoogleShoppingScraper:
         Args:
             descriptions: The descriptions of the products.
             prices: The prices of the products.
+            shipping: The shipping costs of the products.
             urls: The urls of the products.
 
         Returns:

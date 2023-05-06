@@ -48,8 +48,8 @@ class Index(View):
 
             # Find viable products based on the title
             cleaned_title = remove_illegal_characters(title)
-            similar_descriptions, similar_prices, similar_shipping, similar_countries, similar_scores = shopping_instance.find_viable_product(cleaned_title, ramp_down=0.0)
-            candidates = shopping_instance.construct_candidates(similar_descriptions, similar_prices, similar_shipping, similar_countries, similar_scores)
+            similar_descriptions, similar_prices, similar_shipping, similar_countries, similar_conditions, similar_scores = shopping_instance.find_viable_product(cleaned_title, ramp_down=0.0)
+            candidates = shopping_instance.construct_candidates(similar_descriptions, similar_prices, similar_shipping, similar_countries, similar_conditions, similar_scores)
 
             # Convert prices to float and shorten the descriptions if necessary
             similar_prices = [float(price.replace(',', '')) for price in similar_prices]
@@ -70,7 +70,7 @@ class Index(View):
             price_rating = price_difference_rating(float(price), best_total, days)
 
             # Categorize the titles and create the chart and bargraph
-            chart = create_chart(similar_prices, similar_shipping, similar_descriptions, currency, title, best_title)
+            chart = create_chart(similar_prices, similar_shipping, similar_descriptions, similar_conditions, currency, title, best_title)
             bargraph = create_bargraph(similar_countries)   
 
             # Get the total number of items

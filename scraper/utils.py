@@ -156,7 +156,7 @@ def percentage_difference(list_price: float, best_price: float) -> dict:
 
     return difference
 
-def create_chart(similar_prices: list[float], similar_shipping: list[float], similar_descriptions: list[str], listing_currency: str, listing_title: str, best_title: str) -> object:
+def create_chart(similar_prices: list[float], similar_shipping: list[float], similar_descriptions: list[str], similar_conditions: list[str], listing_currency: str, listing_title: str, best_title: str) -> object:
     """
     Creates a line chart visualization based on the categorized items, their prices, and their descriptions.
 
@@ -173,7 +173,8 @@ def create_chart(similar_prices: list[float], similar_shipping: list[float], sim
     sorted_indices = np.argsort(similar_shipping)
     sorted_similar_prices = np.array([similar_prices[i] for i in sorted_indices]).reshape(-1, 1)
     sorted_similar_shipping = np.array([similar_shipping[i] for i in sorted_indices])
-    sorted_similar_description = np.array([similar_descriptions[i] for i in sorted_indices])
+    sorted_similar_descriptions = np.array([similar_descriptions[i] for i in sorted_indices])
+    sorted_similar_conditions = np.array([similar_conditions[i] for i in sorted_indices])
   
     fig = go.Figure()
     fig.add_trace(
@@ -185,8 +186,8 @@ def create_chart(similar_prices: list[float], similar_shipping: list[float], sim
                         colorscale='RdYlGn_r',
                         colorbar=dict(title="Price")),
             hovertemplate="%{text}",
-            text=[f"Product: {desc.title()}<br>Price: ${price:.2f}<br>Shipping: ${ship:.2f}" 
-                for desc, price, ship in zip(sorted_similar_description, sorted_similar_prices[:, 0], sorted_similar_shipping)],
+            text=[f"Product: {desc.title()}<br>Price: ${price:.2f}<br>Shipping: ${ship:.2f}<br>Condition: {cond}" 
+                for desc, price, ship, cond in zip(sorted_similar_descriptions, sorted_similar_prices[:, 0], sorted_similar_shipping, sorted_similar_conditions)],
             showlegend=False,
             name="Products"))
     fig.update_layout(
@@ -226,17 +227,17 @@ def create_chart(similar_prices: list[float], similar_shipping: list[float], sim
     poly_model = LinearRegression()
     poly_model.fit(X_poly, sorted_similar_shipping)
 
-    x_range = np.linspace(sorted_similar_prices.min(), sorted_similar_prices.max(), 100)
-    X_range_poly = poly_features.fit_transform(x_range.reshape(-1, 1))
+    X_range = np.linspace(sorted_similar_prices.min(), sorted_similar_prices.max(), 100)
+    X_range_poly = poly_features.fit_transform(X_range.reshape(-1, 1))
     Y_range = poly_model.predict(X_range_poly)
 
     fig.add_trace(
         go.Scatter(
-            x=x_range, 
+            x=X_range, 
             y=poly_model.predict(X_range_poly), 
             mode='lines', 
             hovertemplate="%{text}",
-            text=[f"Predicted Price: ${price:.2f}" for price in Y_range],
+            text=[f"Predicted Price: ${price:.2f}<br>Predicted Shipping: ${ship:.2f}" for price, ship in zip(X_range, Y_range)],
             showlegend=False,
             name="Polynomial Regression"))
         

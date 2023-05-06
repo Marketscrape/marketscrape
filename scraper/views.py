@@ -69,9 +69,9 @@ class Index(View):
             best_context = percentage_difference(float(price), best_total,)
             price_rating = price_difference_rating(float(price), best_total, days)
 
-            # Categorize the titles and create the chart and wordcloud
+            # Categorize the titles and create the chart and bargraph
             chart = create_chart(similar_prices, similar_shipping, similar_descriptions, currency, title, best_title)
-            wordcloud = create_wordcloud(similar_countries)   
+            bargraph = create_bargraph(similar_countries)   
 
             # Get the total number of items
             total_items = len(similar_descriptions)
@@ -83,7 +83,7 @@ class Index(View):
                 'title': title,
                 'price': f"{float(price):,.2f}",
                 'chart': chart,
-                'wordcloud': wordcloud,
+                'bargraph': bargraph,
                 'price_rating': round(price_rating, 1),
                 'days': days,
                 'hours': hours,

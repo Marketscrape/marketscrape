@@ -110,15 +110,15 @@
 
         <div class="card" style="margin-top: 2.5rem; margin-bottom: 2.5rem;">
             <div class="card-header">
-                <h4><i class="fas fa-globe"></i> Country Frequency</h4>
+                <h4><i class="fas fa-chart-bar"></i> Country Frequency</h4>
             </div>
             <div class="card-body">
 
-                <div id="render-wordcloud" data-chart="{{ wordcloud }}"></div>
+                <div id="render-bargraph" data-chart="{{ bargraph }}"></div>
             </div>
         </div>
     </div>
 
     <script src="{% static 'plotSimilarResults.js' %}"></script>
-    <script src="{% static 'plotWordCloud.js' %}"></script>
+    <script src="{% static 'plotCountryCitations.js' %}"></script>
 {% endblock content %}

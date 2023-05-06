@@ -150,12 +150,16 @@ class EbayScraper:
             A tuple of three lists: (1) titles with outliers removed, (2) prices with outliers removed, and (3) countries with outliers removed.
         """
 
-        outlier_indices = reject_outliers(np.array(prices), m=1.5)
+        # Minimum number of items required to start removing outliers
+        removal_threshold = 100
 
-        titles = [title for i, title in enumerate(titles) if i not in outlier_indices]
-        prices = [price for i, price in enumerate(prices) if i not in outlier_indices]
-        shipping = [ship for i, ship in enumerate(shipping) if i not in outlier_indices]
-        countries = [country for i, country in enumerate(countries) if i not in outlier_indices]
+        if len(titles) >= removal_threshold:
+            outlier_indices = reject_outliers(np.array(prices), m=1.5)
+
+            titles = [title for i, title in enumerate(titles) if i not in outlier_indices]
+            prices = [price for i, price in enumerate(prices) if i not in outlier_indices]
+            shipping = [ship for i, ship in enumerate(shipping) if i not in outlier_indices]
+            countries = [country for i, country in enumerate(countries) if i not in outlier_indices]
 
         return titles, prices, shipping, countries
 

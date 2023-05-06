@@ -5,8 +5,6 @@ import requests
 import re
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.cluster import KMeans
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from wordcloud import WordCloud
@@ -133,7 +131,7 @@ def price_difference_rating(initial: float, final: float, days: int) -> float:
 def percentage_difference(list_price: float, best_price: float) -> dict:
     """
     Returns a dictionary of both the percentage difference between the listing price and the best
-    found price via Google Shopping, and whether or not the difference is categorized as being an
+    found price via Ebay, and whether or not the difference is categorized as being an
     increase or decrease.
 
     Args:
@@ -160,7 +158,7 @@ def percentage_difference(list_price: float, best_price: float) -> dict:
 
     return difference
 
-def create_chart(categorized: dict, similar_prices: list[float], similar_shipping: list[float], similar_descriptions: list[str], listing_currency: str, listing_title: str) -> object:
+def create_chart(similar_prices: list[float], similar_shipping: list[float], similar_descriptions: list[str], listing_currency: str, listing_title: str, best_title: str) -> object:
     """
     Creates a line chart visualization based on the categorized items, their prices, and their descriptions.
 
@@ -173,73 +171,31 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_shippin
     Returns:
         A JSON string containing the Plotly figure of the line chart.
     """
-
-    items, prices, shipping, descriptions = [], [], [], []
-    unit = 1
-
-    for categories, titles in categorized.items():
-        items.append(categories)
-
-        sub_prices, sub_shipping, sub_descriptions = [], [], []
-        for title in titles:
-            idx = similar_descriptions.index(title)
-
-            sub_prices.append(similar_prices[idx])
-            sub_shipping.append(similar_shipping[idx])
-            sub_descriptions.append(title)
-        prices.append(sub_prices)
-        shipping.append(sub_shipping)
-        descriptions.append(sub_descriptions)
     
-    sort_indices = [sorted(range(len(sublist)), key=lambda x: sublist[x]) for sublist in prices]
-    sorted_prices = [[sublist[i] for i in indices] for sublist, indices in zip(prices, sort_indices)]
-
-    sorted_shipping = [[sublist[i] for i in indices] for sublist, indices in zip(shipping, sort_indices)]
-    formatted_shipping = [[f"${ship}" if ship != "0.00" else "Free" for ship in row] for row in sorted_shipping]
-
-    sorted_descriptions = [[sublist[i] for i in indices] for sublist, indices in zip(descriptions, sort_indices)]
-
+    sorted_indices = np.argsort(similar_shipping)
+    sorted_similar_prices = np.array([similar_prices[i] for i in sorted_indices]).reshape(-1, 1)
+    sorted_similar_shipping = np.array([similar_shipping[i] for i in sorted_indices])
+    sorted_similar_description = np.array([similar_descriptions[i] for i in sorted_indices])
+  
     fig = go.Figure()
-
-    for i, _ in enumerate(items):
-        x = [j*unit + 1 for j in range(len(sorted_prices[i]))]
-        hovertext = [f"Product: {desc.title()}<br>Price: ${price:.2f}<br>Shipping: {ship}" for price, ship, desc in zip(sorted_prices[i], formatted_shipping[i], sorted_descriptions[i])]
-        fig.add_trace(go.Scatter(
-            x=x, y=sorted_prices[i], 
-            mode='markers', 
-            hovertemplate="%{text}", 
-            text=hovertext, 
-            name=f"Category {i + 1}"))
-
-    # Compute the polynomial regression on all data points
-    x = np.concatenate([np.arange(len(prices))*unit + 1 for prices in sorted_prices])
-    y = np.concatenate(sorted_prices)
-
-    poly_features = PolynomialFeatures(degree=4, include_bias=True)
-    x_poly = poly_features.fit_transform(x.reshape(-1, 1))
-
-    reg = LinearRegression().fit(x_poly, y)
-    x_reg = np.linspace(np.min(x), np.max(x), num=100)
-    x_reg_poly = poly_features.fit_transform(x_reg.reshape(-1, 1))
-    y_reg = reg.predict(x_reg_poly)
-
-    # Add the trend line to the plot
     fig.add_trace(
-        go.Scatter(x=x_reg, 
-            y=y_reg, 
-            mode='lines', 
-            name='Trend Line'))
-
-    # Add annotations to all x values
-    for x_val in x:
-        y_val = reg.predict(poly_features.transform([[x_val]]))[0]
-        fig.add_annotation(x=x_val, y=y_val, text=f"Prediction: ${y_val:.2f}", showarrow=True)
-            
+        go.Scatter(
+            x=sorted_similar_prices[:, 0], 
+            y=sorted_similar_shipping, 
+            mode='markers',
+            marker=dict(color=sorted_similar_prices[:, 0],
+                        colorscale='RdYlGn_r',
+                        colorbar=dict(title="Price")),
+            hovertemplate="%{text}",
+            text=[f"Product: {desc.title()}<br>Price: ${price:.2f}<br>Shipping: ${ship:.2f}" 
+                for desc, price, ship in zip(sorted_similar_description, sorted_similar_prices[:, 0], sorted_similar_shipping)],
+            showlegend=False,
+            name="Products"))
     fig.update_layout(
         template='plotly_white', 
         hovermode='closest', 
-        xaxis_title="Product Number", 
-        yaxis_title=f"Price $({listing_currency})", 
+        xaxis_title=f"Product Price $({listing_currency})", 
+        yaxis_title=f"Shipping Cost $({listing_currency})",
         legend_title="Categories", 
         title={
             'text': f"Products Similar to: {listing_title}", 
@@ -248,6 +204,44 @@ def create_chart(categorized: dict, similar_prices: list[float], similar_shippin
             'y': 0.9, 
             'x': 0.5})
     
+    # Add best match annotation
+    best_price = similar_prices[similar_descriptions.index(best_title)]
+    best_shipping = similar_shipping[similar_descriptions.index(best_title)]
+    fig.add_trace(
+        go.Scatter(
+            x=[best_price],
+            y=[best_shipping],
+            mode='markers',
+            marker=dict(
+                color='black',
+                symbol='star',
+                size=12
+            ),
+            showlegend=False,
+            hoverinfo='skip'
+        )
+    )
+
+    # Perform polynomial regression to obtain polynomial coefficients
+    poly_features = PolynomialFeatures(degree=3, include_bias=True)
+    X_poly = poly_features.fit_transform(sorted_similar_prices)
+    poly_model = LinearRegression()
+    poly_model.fit(X_poly, sorted_similar_shipping)
+
+    x_range = np.linspace(sorted_similar_prices.min(), sorted_similar_prices.max(), 100)
+    X_range_poly = poly_features.fit_transform(x_range.reshape(-1, 1))
+    Y_range = poly_model.predict(X_range_poly)
+
+    fig.add_trace(
+        go.Scatter(
+            x=x_range, 
+            y=poly_model.predict(X_range_poly), 
+            mode='lines', 
+            hovertemplate="%{text}",
+            text=[f"Predicted Price: ${price:.2f}" for price in Y_range],
+            showlegend=False,
+            name="Polynomial Regression"))
+        
     return fig.to_json()
 
 def create_wordcloud(urls: list[str]) -> object:
@@ -263,62 +257,22 @@ def create_wordcloud(urls: list[str]) -> object:
         - A dictionary where the keys are the website names and the values are the frequency count of each website in the URLs list.
     """
 
-    websites = []
-    for url in urls:
-        match = re.search(r'^https?://(?:www\.)?([^/]+)', url)
-        if match:
-            website = match.group(1)
-            websites.append(website)
-
-    website_counts = Counter(websites)
+    website_counts = Counter(urls)
     wordcloud = WordCloud(
         background_color='white',
         scale=4, 
         prefer_horizontal=0.9,
-        colormap='rainbow').generate_from_frequencies(website_counts)
+        colormap='RdYlGn_r').generate_from_frequencies(website_counts)
 
     fig = px.imshow(wordcloud)
     fig.update_layout(
-        xaxis_title="Website URL",
+        xaxis_title="Country of Origin",
         yaxis_title="Citations",
         title={
-            'text': "Frequently Cited Websites",
+            'text': "Frequently Cited Countries",
             'xanchor': 'center',
             'yanchor': 'top',
             'y': 0.9,
             'x': 0.5})
 
     return fig.to_json()
-
-def categorize_titles(items: list[str]) -> dict:
-    """
-    Categorizes a list of text items using KMeans clustering and TF-IDF vectorization.
-
-    Args:
-    items (list[str]): A list of text items to be categorized.
-
-    Returns:
-    A dictionary where the keys are the names of the clusters and the values are lists of the items in that cluster.
-    """
-
-    vectorizer = TfidfVectorizer()
-    X = vectorizer.fit_transform(items)
-
-    wcss = []
-    for i in range(1, len(items)//2):
-        kmeans = KMeans(n_clusters=i, n_init=10)
-        kmeans.fit(X)
-        wcss.append(kmeans.inertia_)
-
-    # Select the optimal number of clusters based on the elbow point
-    optimal_num_clusters = int(min(wcss))
-    kmeans = KMeans(n_clusters=optimal_num_clusters, n_init=10)
-    kmeans.fit(X)
-
-    clusters = {}
-    for i in range(optimal_num_clusters):
-        cluster_items = [items[j] for j in range(len(items)) if kmeans.labels_[j] == i]
-        representative_item = f"{i + 1}"
-        clusters[representative_item] = cluster_items
-
-    return clusters

@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.views import View
 from .forms import MarketForm
 from .utils import *
-from .shopping_class import GoogleShoppingScraper
+from .shop_class import EbayScraper
 from .marketplace_class import FacebookMarketplaceScraper
 
 class Index(View):
@@ -44,27 +44,23 @@ class Index(View):
             currency = facebook_instance.get_listing_currency()
 
             # Create a GoogleShoppingScraper instance
-            shopping_instance = GoogleShoppingScraper()
+            shopping_instance = EbayScraper()
 
             # Find viable products based on the title
             cleaned_title = remove_illegal_characters(title)
-            similar_descriptions, similar_prices, similar_shipping, similar_urls, similar_scores = shopping_instance.find_viable_product(cleaned_title, ramp_down=0.0)
-            candidates = shopping_instance.construct_candidates(similar_descriptions, similar_prices, similar_shipping, similar_urls, similar_scores)
-            
+            similar_descriptions, similar_prices, similar_shipping, similar_countries, similar_scores = shopping_instance.find_viable_product(cleaned_title, ramp_down=0.0)
+            candidates = shopping_instance.construct_candidates(similar_descriptions, similar_prices, similar_shipping, similar_countries, similar_scores)
+
             # Convert prices to float and shorten the descriptions if necessary
             similar_prices = [float(price.replace(',', '')) for price in similar_prices]
+            similar_shipping = [float(ship.replace(',', '')) for ship in similar_shipping]
 
-            # Categorize the titles and create the chart and wordcloud
-            categorized = categorize_titles(similar_descriptions)
-            chart = create_chart(categorized, similar_prices, similar_shipping, similar_descriptions, currency, title)
-            wordcloud = create_wordcloud(similar_urls)   
-
-            # Based on the best similar product, get the price, description, category, and URL
+            # Based on the best similar product, get the price, description, and country
             best_product = shopping_instance.lowest_price_highest_similarity(candidates)
 
-            idx = similar_urls.index(best_product[1]["url"])
+            idx = similar_countries.index(best_product[1]["country"])
             best_price = f"{similar_prices[idx]:,.2f}"
-            best_shipping = similar_shipping[idx]
+            best_shipping = f"{similar_shipping[idx]:,.2f}"
             best_title = similar_descriptions[idx]
             best_score = best_product[1]["similarity"] * 100
 
@@ -72,6 +68,10 @@ class Index(View):
             best_total = float(best_price.replace(",", "")) + float(best_shipping.replace(",", ""))
             best_context = percentage_difference(float(price), best_total,)
             price_rating = price_difference_rating(float(price), best_total, days)
+
+            # Categorize the titles and create the chart and wordcloud
+            chart = create_chart(similar_prices, similar_shipping, similar_descriptions, currency, title, best_title)
+            wordcloud = create_wordcloud(similar_countries)   
 
             # Get the total number of items
             total_items = len(similar_descriptions)
@@ -93,7 +93,6 @@ class Index(View):
                 'category': category,
                 'city': city,
                 'currency': currency,
-                'categorized': categorized,
                 'total_items': total_items,
                 'best_price': best_price,
                 'best_shipping': best_shipping,

@@ -8,7 +8,8 @@
             image: "{{ image }}",
             title: "{{ title }}",
             rating: "{{ price_rating }}",
-            price: "{{ price }}"
+            price: "{{ price }}",
+            date: new Date()
         };
         var shortened_url = "{{ shortened_url }}";
         localStorage.setItem(shortened_url, JSON.stringify(item));

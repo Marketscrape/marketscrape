@@ -6,6 +6,7 @@ import re
 import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
+from sklearn.metrics import mean_squared_error
 from collections import Counter
 
 def remove_illegal_characters(title: str) -> str:
@@ -182,14 +183,22 @@ def create_chart(similar_prices: list[float], similar_shipping: list[float], sim
             x=sorted_similar_prices[:, 0], 
             y=sorted_similar_shipping, 
             mode='markers',
-            marker=dict(color=sorted_similar_prices[:, 0],
-                        colorscale='RdYlGn_r',
-                        colorbar=dict(title="Price")),
+            marker=dict(
+                color=sorted_similar_prices[:, 0] + sorted_similar_shipping,
+                colorscale='RdYlGn_r',
+                colorbar=dict(title="Total Price"),
+                size=8
+            ),
             hovertemplate="%{text}",
-            text=[f"Product: {desc.title()}<br>Price: ${price:.2f}<br>Shipping: ${ship:.2f}<br>Condition: {cond}" 
-                for desc, price, ship, cond in zip(sorted_similar_descriptions, sorted_similar_prices[:, 0], sorted_similar_shipping, sorted_similar_conditions)],
+            text=[
+                f"Product: {desc.title()}<br>Price: ${price:,.2f}<br>Shipping: ${ship:,.2f}<br>Condition: {cond}" 
+                for desc, price, ship, cond in zip(sorted_similar_descriptions, sorted_similar_prices[:, 0], sorted_similar_shipping, sorted_similar_conditions)
+            ],
             showlegend=False,
-            name="Products"))
+            name="Products"
+        )
+    )
+    
     fig.update_layout(
         template='plotly_white', 
         hovermode='closest', 
@@ -201,7 +210,9 @@ def create_chart(similar_prices: list[float], similar_shipping: list[float], sim
             'xanchor': 'center',
             'yanchor': 'top',
             'y': 0.9, 
-            'x': 0.5})
+            'x': 0.5
+        }
+    )
     
     # Add best match annotation
     best_price = similar_prices[similar_descriptions.index(best_title)]
@@ -212,7 +223,7 @@ def create_chart(similar_prices: list[float], similar_shipping: list[float], sim
             y=[best_shipping],
             mode='markers',
             marker=dict(
-                color='black',
+                color='#fc0',
                 symbol='star',
                 size=12
             ),
@@ -222,7 +233,7 @@ def create_chart(similar_prices: list[float], similar_shipping: list[float], sim
     )
 
     # Perform polynomial regression to obtain polynomial coefficients
-    poly_features = PolynomialFeatures(degree=3, include_bias=True)
+    poly_features = PolynomialFeatures(degree=4, include_bias=True)
     X_poly = poly_features.fit_transform(sorted_similar_prices)
     poly_model = LinearRegression()
     poly_model.fit(X_poly, sorted_similar_shipping)
@@ -231,15 +242,43 @@ def create_chart(similar_prices: list[float], similar_shipping: list[float], sim
     X_range_poly = poly_features.fit_transform(X_range.reshape(-1, 1))
     Y_range = poly_model.predict(X_range_poly)
 
+    # Calculate confidence interval
+    y_pred = poly_model.predict(X_poly)
+    mse = mean_squared_error(sorted_similar_shipping, y_pred)
+    # 95% confidence interval
+    ci = 1.96 * np.sqrt(mse)
+
+    upper_bound = Y_range + ci
+    lower_bound = Y_range - ci
+
     fig.add_trace(
         go.Scatter(
             x=X_range, 
-            y=poly_model.predict(X_range_poly), 
+            y=Y_range, 
             mode='lines', 
             hovertemplate="%{text}",
             text=[f"Predicted Price: ${price:.2f}<br>Predicted Shipping: ${ship:.2f}" for price, ship in zip(X_range, Y_range)],
             showlegend=False,
-            name="Polynomial Regression"))
+            name="Trend Line",
+            line_color='rgb(128, 128, 128)',
+            line=dict(
+                dash='longdash',
+            )
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=np.concatenate([X_range, X_range[::-1]]),
+            y=np.concatenate([upper_bound, lower_bound[::-1]]),
+            fill='toself',
+            fillcolor='rgba(128, 128, 128, 0.15)',
+            line_color='rgba(255, 255, 255, 0)',
+            hoverinfo="skip",
+            showlegend=False
+        )
+    )
+
         
     return fig.to_json()
 

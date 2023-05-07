@@ -100,8 +100,17 @@ class EbayScraper:
         for ship in shipping:
             values.append(ship.text)
         
-        cleansed = [re.search(r"([0-9]+\.[0-9]+)|(Free)|(not specified)", ship).group(0) for ship in values]
-        cleansed = [float(ship) if ship not in ["Free", "not specified"] else 0.0 for ship in cleansed]
+        cleansed = []
+        for ship in values:
+            match = re.search(r"([0-9]+.*[0-9])|(Free)|(not specified)", ship)
+            if match:
+                if match.group(1):
+                    price = match.group(1).replace(",", "")
+                    cleansed.append(float(price))
+                else:
+                    cleansed.append(0.0)
+            else:
+                cleansed.append(0.0)
 
         return cleansed
 
@@ -292,12 +301,7 @@ class EbayScraper:
             The descriptions, prices and countries the viable products.
         """
 
-        descriptions = []
-        prices = []
-        shipping = []
-        countries = []
-        conditions = []
-        similarities = []
+        descriptions, prices, shipping, countries, conditions, similarities = [], [], [], [], [], []
 
         for page_number in range(5):
             similarity_threshold = 0.35

@@ -1,5 +1,5 @@
 function isValidUrl(url) {
-    const regex = new RegExp(/https:\/\/www\.facebook\.com\/marketplace\/item\/[0-9]{15,16}\//g);
+    const regex = new RegExp(/https:\/\/www\.facebook\.com\/marketplace\/item\/[0-9]{15,16}/);
 
     if (regex.test(url)){
         return true;

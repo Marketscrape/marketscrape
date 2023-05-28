@@ -18,6 +18,13 @@ Marketscrape is a user-friendly web scraper for Facebook Marketplace that utiliz
 - Analyze Facebook Marketplace listings across millions of products
 - Detailed Analysis report with product recommendations
 
+# Demo
+
+https://github.com/alexwholland/marketscrape/assets/64433812/4e48c641-df1e-4751-8c9e-186ae981b32f
+
+
+YouTube: https://www.youtube.com/watch?v=DQQmDzZ8MJA
+
 
 # Installation
 Marketscrape is easiest used with [Visual Studio Code](https://code.visualstudio.com/) in a [Docker](https://www.docker.com/) container using the [Dev Containeres](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension. More information about installation can be found [here](https://code.visualstudio.com/docs/devcontainers/tutorial).

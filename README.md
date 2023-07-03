@@ -25,8 +25,10 @@ https://github.com/alexwholland/marketscrape/assets/64433812/4e48c641-df1e-4751-
 
 YouTube: https://www.youtube.com/watch?v=DQQmDzZ8MJA
 
+# Repository Structure
+Marketscrape is a Django-based web application. You can learn more about Django [here](https://www.djangoproject.com/start/). 
 
-# Installation
+# Getting Started
 Marketscrape is easiest used with [Visual Studio Code](https://code.visualstudio.com/) in a [Docker](https://www.docker.com/) container using the [Dev Containeres](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension. More information about installation can be found [here](https://code.visualstudio.com/docs/devcontainers/tutorial).
 
 ### Clone the repository
@@ -50,3 +52,9 @@ In Visual Studio Code:
 
 ### Run the application
 To run Marketscrape run `python manage.py runserver` in the Dev Container
+
+# Contributing
+Contributions to this project are welcome. If you encounter any issues or have suggestions for improvements, please submit an issue or a pull request.
+
+# License
+This project is licensed under the [MIT License](https://github.com/Marketscrape/marketscrape/blob/main/LICENSE)

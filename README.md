@@ -29,7 +29,7 @@ YouTube: https://www.youtube.com/watch?v=DQQmDzZ8MJA
 Marketscrape is a Django-based web application. You can learn more about Django [here](https://www.djangoproject.com/start/). 
 
 # Getting Started
-Marketscrape is easiest used with [Visual Studio Code](https://code.visualstudio.com/) in a [Docker](https://www.docker.com/) container using the [Dev Containeres](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension. More information about installation can be found [here](https://code.visualstudio.com/docs/devcontainers/tutorial).
+Marketscrape is easiest used with [Visual Studio Code](https://code.visualstudio.com/) in a [Docker](https://www.docker.com/) container using the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension. More information about installation can be found [here](https://code.visualstudio.com/docs/devcontainers/tutorial).
 
 ### Clone the repository
 ```bash
@@ -43,11 +43,11 @@ Download and install [Docker Desktop](https://www.docker.com/products/docker-des
 Run the Docker Desktop application to start Docker
 
 ### Install the extension
-The Dev Containers extension lets you run Visual Studio Code instide a Docker container
+The Dev Containers extension lets you run Visual Studio Code inside a Docker container
 
 ### Build the Dev Container
 In Visual Studio Code:
-- Command Pallete `(Ctrl + Shift + P)` andselect `Dev Containers: Open Folder in Container...`
+- Command Palette `(Ctrl + Shift + P)` and select `Dev Containers: Open Folder in Container...`
 - Select the cloned repository
 
 ### Run the application
